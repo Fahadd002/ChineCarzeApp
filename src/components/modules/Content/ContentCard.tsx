@@ -1,0 +1,114 @@
+import Image from "next/image";
+import Link from "next/link";
+import { IContent } from "@/types/content.types";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Play, Star, Eye } from "lucide-react";
+
+interface ContentCardProps {
+  content: IContent;
+  showWatchButton?: boolean;
+}
+
+export function ContentCard({ content, showWatchButton = false }: ContentCardProps) {
+  return (
+    <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg">
+      <CardHeader className="p-0">
+        <div className="relative aspect-[2/3] overflow-hidden">
+          {content.posterUrl ? (
+            <Image
+              src={content.posterUrl}
+              alt={content.title}
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center bg-muted">
+              <span className="text-muted-foreground">No Image</span>
+            </div>
+          )}
+
+          {/* Overlay with play button */}
+          <div className="absolute inset-0 bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-center justify-center">
+            {showWatchButton && (
+              <Button size="lg" className="rounded-full">
+                <Play className="h-6 w-6 mr-2" />
+                Watch Now
+              </Button>
+            )}
+          </div>
+
+          {/* Access type badge */}
+          <div className="absolute top-2 left-2">
+            <Badge variant={content.accessType === "FREE" ? "secondary" : "default"}>
+              {content.accessType}
+            </Badge>
+          </div>
+
+          {/* Media type badge */}
+          <div className="absolute top-2 right-2">
+            <Badge variant="outline">
+              {content.mediaType.replace("_", " ")}
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-4">
+        <CardTitle className="line-clamp-2 text-lg">{content.title}</CardTitle>
+
+        <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+          <span>{content.releaseYear}</span>
+          <span>•</span>
+          <div className="flex items-center gap-1">
+            <Eye className="h-4 w-4" />
+            <span>{content.views}</span>
+          </div>
+        </div>
+
+        {content.genres.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {content.genres.slice(0, 3).map((genre) => (
+              <Badge key={genre} variant="outline" className="text-xs">
+                {genre}
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        {content.description && (
+          <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
+            {content.description}
+          </p>
+        )}
+      </CardContent>
+
+      <CardFooter className="p-4 pt-0">
+        <div className="flex w-full gap-2">
+          <Button asChild variant="outline" className="flex-1">
+            <Link href={`/content/${content.id}`}>
+              View Details
+            </Link>
+          </Button>
+
+          {content.accessType === "TICKET" && (
+            <Button asChild className="flex-1">
+              <Link href={`/dashboard/buy-ticket/${content.id}`}>
+                Buy Ticket
+              </Link>
+            </Button>
+          )}
+
+          {content.accessType === "FREE" && (
+            <Button asChild className="flex-1">
+              <Link href={`/content/${content.id}/watch`}>
+                Watch Now
+              </Link>
+            </Button>
+          )}
+        </div>
+      </CardFooter>
+    </Card>
+  );
+}

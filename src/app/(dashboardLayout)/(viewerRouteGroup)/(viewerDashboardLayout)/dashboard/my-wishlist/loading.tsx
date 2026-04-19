@@ -1,4 +1,4 @@
-export default function PatientsMyPrescriptionsLoading() {
+export default function MyWishlistLoading() {
   // Or a custom loading skeleton component
-  return <p>Loading Patients My Prescriptions...</p>;
+  return <p>Loading My Wishlist...</p>;
 }

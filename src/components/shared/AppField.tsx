@@ -19,7 +19,7 @@ const getErrorMessage = (error : unknown) : string => {
 type AppFieldProps = {
     field : AnyFieldApi;
     label : string;
-    type ?: "text" | "email" | "password" | "number";
+    type ?: "text" | "email" | "password" | "number" | "textarea";
     placeholder ?: string;
     append ?: React.ReactNode;
     prepend ?: React.ReactNode;
@@ -58,30 +58,43 @@ const AppField = ({
                 </div>)
             }
 
-            <Input
-                id={field.name}
-                name={field.name}
-                type={type}
-                value={field.state.value}
-                placeholder={placeholder}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-                disabled={disabled}
-                aria-invalid={hasError}
-                aria-describedby={hasError ? `${field.name}-error` : undefined}
-                className={cn(
-                    prepend && "pl-10",
-                    append && "pr-10",
-                    hasError && "border-destructive focus-visible:ring-destructive/20",
-                )}
-            />
-
-            {
-                append && (<div className="absolute inset-y-0 right-0 items-center pr-3 pointer-events-none z-10">
-                    {append}
-                </div>)
-            }
-
+            {type === "textarea" ? (
+                <textarea
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    placeholder={placeholder}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    disabled={disabled}
+                    aria-invalid={hasError}
+                    aria-describedby={hasError ? `${field.name}-error` : undefined}
+                    className={cn(
+                        "min-h-[120px] w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/10",
+                        prepend && "pl-10",
+                        append && "pr-10",
+                        hasError && "border-destructive focus-visible:ring-destructive/20",
+                    )}
+                />
+            ) : (
+                <Input
+                    id={field.name}
+                    name={field.name}
+                    type={type}
+                    value={field.state.value}
+                    placeholder={placeholder}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    disabled={disabled}
+                    aria-invalid={hasError}
+                    aria-describedby={hasError ? `${field.name}-error` : undefined}
+                    className={cn(
+                        prepend && "pl-10",
+                        append && "pr-10",
+                        hasError && "border-destructive focus-visible:ring-destructive/20",
+                    )}
+                />
+            )}
             {
                 hasError && (
                     <p

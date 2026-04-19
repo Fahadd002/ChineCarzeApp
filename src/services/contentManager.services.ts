@@ -1,52 +1,32 @@
 "use server";
 
-import { httpClient } from "@/lib/axios/httpClient";
-import { ICreateDoctorPayload, IDoctor, IDoctorDetails, IUpdateDoctorPayload } from "@/types/contentManager.types";
+import { ApiResponse } from "@/types/api.type";
+import { IContentManager, ICreateContentManagerPayload, IUpdateContentManagerPayload } from "@/types/contentManager.types";
 
+const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-
-
-export const getDoctors = async (queryString?: string) => {
-    try {
-        const doctors = await httpClient.get<IDoctor[]>(queryString ? `/doctors?${queryString}` : "/doctors");
-        return doctors;
-    } catch (error) {
-        console.log("Error fetching doctors:", error);
-        throw error;
-    }
+if (!BASE_API_URL) {
+    throw new Error("NEXT_PUBLIC_API_BASE_URL is not defined");
 }
 
+export async function createContentManager(payload: ICreateContentManagerPayload): Promise<ApiResponse<IContentManager>> {
+    const res = await fetch(`${BASE_API_URL}/api/v1/users/create-manager`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        credentials: "include",
+    });
 
-
-export const createDoctor = async (payload: ICreateDoctorPayload) => {
-    try {
-        const response = await httpClient.post<IDoctor>("/users/create-doctor", payload);
-        return response;
-    } catch (error) {
-        console.log("Error creating doctor:", error);
-        throw error;
+    if (!res.ok) {
+        throw new Error(`Failed to create content manager: ${res.statusText}`);
     }
+
+    return res.json();
 }
 
-export const updateDoctor = async (id: string, payload: IUpdateDoctorPayload) => {
-    try {
-        const response = await httpClient.patch<IDoctor>(`/doctors/${id}`, payload);
-        return response;
-    } catch (error) {
-        console.log("Error updating doctor:", error);
-        throw error;
-    }
-}
-
-export const deleteDoctor = async (id: string) => {
-    try {
-        const response = await httpClient.delete<{ message: string }>(`/doctors/${id}`);
-        return response;
-    } catch (error) {
-        console.log("Error deleting doctor:", error);
-        throw error;
-    }
-}
+// Note: Other content manager functions like get, update, delete can be added when the backend provides the routes
 
 export const getDoctorById = async (id: string) => {
     try {

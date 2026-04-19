@@ -21,8 +21,8 @@ export interface BarChartData {
 
 export interface IAdminDashboardData {
     appointmentCount : number;
-    patientCount : number;
-    doctorCount : number;
+    viewerCount : number;
+    contentManagerCount : number;
     adminCount : number;
     superAdminCount : number;
     paymentCount : number;

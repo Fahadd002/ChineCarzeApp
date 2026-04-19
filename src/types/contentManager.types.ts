@@ -11,66 +11,42 @@ export enum UserStatus {
 }
 
 
-export interface IDoctor {
-    id: number;
+export interface IContentManager {
+    id: string;
     name: string;
     email: string;
     profilePhoto?: string;
     contactNumber?: string;
-    address?: string;
-    registrationNumber: string;
-    experience?: number;
     gender: Gender;
-    appointmentFee: number;
-    qualification: string;
-    currentWorkingPlace: string;
-    designation: string;
-    averageRating: number;
+    isDeleted: boolean;
+    deletedAt?: Date;
     createdAt: Date;
+    updatedAt: Date;
     user : {
         status : UserStatus
     };
 
 }
 
-export interface ICreateDoctorPayload {
+export interface ICreateContentManagerPayload {
     password: string;
-    doctor: {
+    contentManager: {
         name: string;
         email: string;
         contactNumber: string;
-        address?: string;
-        registrationNumber: string;
-        experience?: number;
-        gender: Gender.MALE | Gender.FEMALE;
-        appointmentFee: number;
-        qualification: string;
-        currentWorkingPlace: string;
-        designation: string;
+        gender: Gender;
     };
 }
 
-export interface IUpdateDoctorSpecialtyChange {
-    specialtyId: string;
-    shouldDelete?: boolean;
-}
-
-export interface IUpdateDoctorPayload {
-    doctor?: {
+export interface IUpdateContentManagerPayload {
+    contentManager?: {
         name?: string;
         contactNumber?: string;
-        address?: string;
-        registrationNumber?: string;
-        experience?: number;
-        gender?: Gender.MALE | Gender.FEMALE;
-        appointmentFee?: number;
-        qualification?: string;
-        currentWorkingPlace?: string;
-        designation?: string;
+        gender?: Gender;
     };
 }
 
-export interface IDoctorUserDetails {
+export interface IContentManagerUserDetails {
     id?: string;
     email?: string;
     name?: string;
@@ -84,14 +60,6 @@ export interface IDoctorUserDetails {
     updatedAt?: string | Date;
 }
 
-export interface IDoctorReview {
-    id?: string;
-    rating?: number;
-    comment?: string;
-    patientId?: string;
-    createdAt?: string | Date;
-}
-
-export interface IDoctorDetails extends IDoctor {
-    user: IDoctorUserDetails;
+export interface IContentManagerDetails extends IContentManager {
+    user: IContentManagerUserDetails;
 }

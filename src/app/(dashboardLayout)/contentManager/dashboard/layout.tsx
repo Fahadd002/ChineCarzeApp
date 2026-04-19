@@ -1,12 +1,7 @@
-export default function DoctorsDashboardLayout({
+export default function ContentManagerDashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <>
-      Doctors Dashboard Layout
-      {children}
-    </>
-  );
+  return <>{children}</>;
 }

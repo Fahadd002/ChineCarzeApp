@@ -12,3 +12,14 @@ export interface ILoginResponse {
         emailVerified: boolean;
     }
 }
+
+export interface IRegisterResponse {
+    success: boolean;
+    message: string;
+    user?: {
+        name: string;
+        email: string;
+        role: string;
+        emailVerified: boolean;
+    }
+}

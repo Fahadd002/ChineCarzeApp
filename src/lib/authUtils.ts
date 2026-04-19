@@ -16,8 +16,8 @@ export const commonProtectedRoutes : RouteConfig = {
     pattern : []
 }
 
-export const doctorProtectedRoutes : RouteConfig = {
-    pattern: [/^\/doctor\/dashboard/ ], // Matches any path that starts with /doctor/dashboard
+export const contentManagerProtectedRoutes : RouteConfig = {
+    pattern: [/^\/contentManager\/dashboard/ ], // Matches any path that starts with /contentManager/dashboard
     exact : []
 }
 
@@ -31,7 +31,7 @@ export const adminProtectedRoutes : RouteConfig = {
 //     exact : []
 // }
 
-export const patientProtectedRoutes : RouteConfig = {
+export const viewerProtectedRoutes : RouteConfig = {
     pattern: [/^\/dashboard/ ], // Matches any path that starts with /dashboard
     exact : [ "/payment/success"]
 };
@@ -44,7 +44,7 @@ export const isRouteMatches = (pathname : string, routes : RouteConfig) => {
 }
 
 export const getRouteOwner = (pathname : string) : "SUPER_ADMIN" | "ADMIN" | "CONTENT_MANAGER" | "VIEWER" | "COMMON" | null => {
-    if(isRouteMatches(pathname, doctorProtectedRoutes)) {
+    if(isRouteMatches(pathname, contentManagerProtectedRoutes)) {
         return "CONTENT_MANAGER";
     }
 
@@ -53,7 +53,7 @@ export const getRouteOwner = (pathname : string) : "SUPER_ADMIN" | "ADMIN" | "CO
         return "ADMIN";
     }
     
-    if(isRouteMatches(pathname, patientProtectedRoutes)) {
+    if(isRouteMatches(pathname, viewerProtectedRoutes)) {
         return "VIEWER";
     }
 
@@ -69,7 +69,7 @@ export const getDefaultDashboardRoute = (role : UserRole) => {
         return "/admin/dashboard";
     }
     if(role === "CONTENT_MANAGER") {
-        return "/doctor/dashboard";
+        return "/contentManager/dashboard";
     }
     if(role === "VIEWER") {
         return "/dashboard";

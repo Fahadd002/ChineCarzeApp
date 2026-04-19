@@ -1,4 +1,4 @@
-export default function PatientDashboardLayout({
+export default function ViewerDashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;

@@ -40,28 +40,23 @@ export const getCommonNavItems = (role : UserRole) : NavSection[] => {
 }
 
 
-export const doctorNavItems : NavSection[] = [
+export const contentManagerNavItems : NavSection[] = [
     {
-        title: " Patient Management",
+        title: " Content Management",
         items : [
             {
-                title : "Appointments",
-                href : "/doctor/dashboard/appointments",
-                icon : "Calender"
+                title : "My Contents",
+                href : "/contentManager/dashboard/my-contents",
+                icon : "Video"
             },
             {
-                title: "My Schedules",
-                href: "/doctor/dashboard/my-schedules",
-                icon: "Clock",
+                title: "Add Content",
+                href: "/contentManager/dashboard/add-content",
+                icon: "Plus",
             },
             {
-                title: "Prescriptions",
-                href: "/doctor/dashboard/prescriptions",
-                icon: "FileText",
-            },
-            {
-                title: "My Reviews",
-                href: "/doctor/dashboard/my-reviews",
+                title: "Reviews",
+                href: "/contentManager/dashboard/reviews",
                 icon: "Star",
             },
         ]
@@ -78,54 +73,24 @@ export const adminNavItems: NavSection[] = [
                 icon: "Shield",
             },
             {
-                title: "Doctors",
-                href: "/admin/dashboard/doctors-management",
-                icon: "Stethoscope",
+                title: "Content Managers",
+                href: "/admin/dashboard/content-managers-management",
+                icon: "Users",
             },
             {
-                title: "Patients",
-                href: "/admin/dashboard/patients-management",
+                title: "Viewers",
+                href: "/admin/dashboard/viewers-management",
                 icon: "Users",
             },
         ],
     },
     {
-        title: "Hospital Management",
+        title: "Content Management",
         items: [
             {
-                title: "Appointments",
-                href: "/admin/dashboard/appointments-management",
-                icon: "Calendar",
-            },
-            {
-                title: "Schedules",
-                href: "/admin/dashboard/schedules-management",
-                icon: "Clock",
-            },
-            {
-                title: "Specialties",
-                href: "/admin/dashboard/specialties-management",
-                icon: "Hospital",
-            },
-            {
-                title: "Doctor Schedules",
-                href: "/admin/dashboard/doctor-schedules-managament",
-                icon: "CalendarClock",
-            },
-            {
-                title: "Doctor Specialties",
-                href: "/admin/dashboard/doctor-specialties-management",
-                icon: "Stethoscope",
-            },
-            {
-                title: "Payments",
-                href: "/admin/dashboard/payments-management",
-                icon: "CreditCard",
-            },
-            {
-                title: "Prescriptions",
-                href: "/admin/dashboard/prescriptions-management",
-                icon: "FileText",
+                title: "All Contents",
+                href: "/admin/dashboard/contents-management",
+                icon: "Video",
             },
             {
                 title: "Reviews",
@@ -134,36 +99,46 @@ export const adminNavItems: NavSection[] = [
             },
         ],
     },
-];
-
-export const patientNavItems: NavSection[] = [
     {
-        title: "Appointments",
+        title: "Payment Management",
         items: [
             {
-                title: "My Appointments",
-                href: "/dashboard/my-appointments",
-                icon: "Calendar",
+                title: "Payments",
+                href: "/admin/dashboard/payments-management",
+                icon: "CreditCard",
+            },
+        ],
+    },
+];
+
+export const viewerNavItems: NavSection[] = [
+    {
+        title: "My Content",
+        items: [
+            {
+                title: "Watchlist",
+                href: "/dashboard/my-wishlist",
+                icon: "Bookmark",
             },
             {
-                title: "Book Appointment",
-                href: "/dashboard/book-appointments",
-                icon: "ClipboardList",
+                title: "Subscriptions",
+                href: "/dashboard/my-subscriptions",
+                icon: "CreditCard",
+            },
+            {
+                title: "Purchase History",
+                href: "/dashboard/purchase-history",
+                icon: "ShoppingCart",
             },
         ],
     },
     {
-        title: "Medical Records",
+        title: "Reviews",
         items: [
             {
-                title: "My Prescriptions",
-                href: "/dashboard/my-prescriptions",
-                icon: "FileText",
-            },
-            {
-                title: "Health Records",
-                href: "/dashboard/health-records",
-                icon: "Activity",
+                title: "My Reviews",
+                href: "/dashboard/my-reviews",
+                icon: "Star",
             },
         ],
     },
@@ -177,12 +152,10 @@ export const getNavItemsByRole = (role : UserRole) : NavSection[] => {
         case "ADMIN":
             return [...commonNavItems, ...adminNavItems];
 
-        case "DOCTOR":
-            return [...commonNavItems, ...doctorNavItems];
+        case "CONTENT_MANAGER":
+            return [...commonNavItems, ...contentManagerNavItems];
 
-        case "PATIENT":
-            return [...commonNavItems, ...patientNavItems]
+        case "VIEWER":
+            return [...commonNavItems, ...viewerNavItems];
     }
-
-
 }
