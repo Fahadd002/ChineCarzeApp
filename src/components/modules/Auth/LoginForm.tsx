@@ -15,9 +15,10 @@ import { useState } from "react";
 
 interface LoginFormProps {
     redirectPath? : string;
+    message?: string;
 }
 
-const LoginForm = ({ redirectPath }: LoginFormProps) => {
+const LoginForm = ({ redirectPath, message }: LoginFormProps) => {
     // const queryClient = useQueryClient();
 
     const [serverError, setServerError] = useState<string | null>(null);
@@ -58,6 +59,11 @@ const LoginForm = ({ redirectPath }: LoginFormProps) => {
       </CardHeader>
 
       <CardContent>
+        {message && (
+          <Alert>
+            <AlertDescription>{message}</AlertDescription>
+          </Alert>
+        )}
         <form
           method="POST"
           action="#"

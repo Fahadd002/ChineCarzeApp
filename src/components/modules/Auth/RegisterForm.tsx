@@ -12,14 +12,18 @@ import { useMutation } from "@tanstack/react-query";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const RegisterForm = () => {
     const [serverError, setServerError] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+    const router = useRouter();
+
     const { mutateAsync , isPending} = useMutation({
-        mutationFn : (payload : IRegisterPayload) => registerAction(payload),
+      mutationFn : (payload : IRegisterPayload) => registerAction(payload),
     })
 
     const form = useForm({
@@ -33,15 +37,22 @@ const RegisterForm = () => {
         onSubmit : async ({value}) => {
             setServerError(null);
             try {
-                const result = await mutateAsync(value) as any;
+              const result = await mutateAsync(value) as any;
 
-                if(!result.success ){
-                    setServerError(result.message || "Registration failed");
-                    return ;
-                }
+              if(!result.success ){
+                setServerError(result.message || "Registration failed");
+                toast.error(result.message || "Registration failed");
+                return ;
+              }
+
+              // success: navigate to verify page with email query param
+              toast.success(result.message || "Registration successful. Verify your email.");
+              router.push(`/verify-email?email=${encodeURIComponent(value.email)}`);
             } catch (error : any) {
-                console.log(`Registration failed: ${error.message}`);
-                setServerError(`Registration failed: ${error.message}`);
+              console.log(`Registration failed: ${error.message}`);
+              const msg = error?.message || "Registration failed";
+              setServerError(msg);
+              toast.error(msg);
             }
         }
     })

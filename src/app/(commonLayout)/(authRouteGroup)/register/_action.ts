@@ -2,12 +2,11 @@
 "use server";
 
 import { httpClient } from "@/lib/axios/httpClient";
-import { ApiErrorResponse } from "@/types/api.type";
+import { ApiErrorResponse, ApiResponse } from "@/types/api.type";
 import { IRegisterResponse } from "@/types/auth.type";
 import { IRegisterPayload, registerZodSchema } from "@/zod/auth.validation";
-import { redirect } from "next/navigation";
 
-export const registerAction = async (payload : IRegisterPayload) : Promise<IRegisterResponse | ApiErrorResponse> =>{
+export const registerAction = async (payload : IRegisterPayload) : Promise<ApiResponse<IRegisterResponse> | ApiErrorResponse> =>{
     const parsedPayload = registerZodSchema.safeParse(payload);
 
     if(!parsedPayload.success){
@@ -17,15 +16,14 @@ export const registerAction = async (payload : IRegisterPayload) : Promise<IRegi
             message: firstError,
         }
     }
+
     try {
         const response = await httpClient.post<IRegisterResponse>("/auth/register", parsedPayload.data);
-
-        // After successful registration, redirect to login or verification
-        redirect("/login?message=Registration successful. Please check your email for verification.");
-        
+        // Return the full ApiResponse so the client receives `{ success, message, data }`.
+        return response;
     } catch (error : any) {
-        console.log(error, "error");
-        if(error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")){
+        // Do not treat Next.js internal redirect errors as generic failures here.
+        if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) {
             throw error;
         }
 

@@ -7,7 +7,6 @@ import { getMySubscriptions } from "@/services/subscription.services";
 import { getMyTickets } from "@/services/ticket.services";
 import { ContentGrid } from "@/components/modules/Content/ContentGrid";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const ViewerDashboardPage = () => {
@@ -94,7 +93,7 @@ const ViewerDashboardPage = () => {
             ))}
           </div>
         ) : (
-          <ContentGrid contents={featuredContents} showWatchButton />
+          <ContentGrid contents={featuredContents} />
         )}
       </div>
     </div>

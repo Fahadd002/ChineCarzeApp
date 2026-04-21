@@ -24,6 +24,13 @@ export const registerZodSchema = z.object({
     message: "Passwords don't match",
     path: ["confirmPassword"],
 });
+export type ILoginPayload = z.infer<typeof loginZodSchema>;
+export type IRegisterPayload = z.infer<typeof registerZodSchema>;
+export const verifyEmailZodSchema = z.object({
+    email: z.string().email("Invalid email address"),
+    otp: z.string().min(6, "OTP must be 6 digits").max(6, "OTP must be 6 digits"),
+});
 
 export type ILoginPayload = z.infer<typeof loginZodSchema>;
 export type IRegisterPayload = z.infer<typeof registerZodSchema>;
+export type IVerifyEmailPayload = z.infer<typeof verifyEmailZodSchema>;

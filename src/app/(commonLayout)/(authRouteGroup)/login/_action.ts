@@ -24,7 +24,7 @@ export const loginAction = async (payload : ILoginPayload, redirectPath ?: strin
         const response = await httpClient.post<ILoginResponse>("/auth/login", parsedPayload.data);
 
         const { accessToken, refreshToken, token, user} = response.data;
-        const {role, emailVerified, needPasswordChange, email} = user;
+        const {role, needPasswordChange, email} = user;
         await setTokenInCookies("accessToken", accessToken);
         await setTokenInCookies("refreshToken", refreshToken);
         await setTokenInCookies("better-auth.session_token", token, 24 * 60 * 60); // 1 day in seconds
