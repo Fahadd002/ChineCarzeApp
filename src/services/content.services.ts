@@ -1,78 +1,50 @@
+"use server";
+
+import { httpClient } from "@/lib/axios/httpClient";
 import { ApiResponse } from "@/types/api.type";
 import { IContent, IContentCreatePayload, IContentUpdatePayload, IWatchableContent } from "@/types/content.types";
-
-const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-if (!BASE_API_URL) {
-    throw new Error("NEXT_PUBLIC_API_BASE_URL is not defined");
-}
 
 export async function getAllContents(params?: {
     page?: number;
     limit?: number;
-    search?: string;
-    genre?: string;
+    searchTerm?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    genre?: string; // Can be comma-separated like "Action,Comedy"
     mediaType?: string;
+    releaseYear?: number;
+    accessType?: string;
 }): Promise<ApiResponse<IContent[]>> {
-    const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.set("page", params.page.toString());
-    if (params?.limit) searchParams.set("limit", params.limit.toString());
-    if (params?.search) searchParams.set("search", params.search);
-    if (params?.genre) searchParams.set("genre", params.genre);
-    if (params?.mediaType) searchParams.set("mediaType", params.mediaType);
-
-    const queryString = searchParams.toString();
-    const url = `${BASE_API_URL}/api/v1/contents${queryString ? `?${queryString}` : ""}`;
-
-    const res = await fetch(url, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-        },
-    });
-
-    if (!res.ok) {
-        throw new Error(`Failed to fetch contents: ${res.statusText}`);
-    }
-
-    return res.json();
+    const queryString = new URLSearchParams();
+    
+    if (params?.page) queryString.set("page", params.page.toString());
+    if (params?.limit) queryString.set("limit", params.limit.toString());
+    if (params?.searchTerm) queryString.set("searchTerm", params.searchTerm);
+    if (params?.sortBy) queryString.set("sortBy", params.sortBy);
+    if (params?.sortOrder) queryString.set("sortOrder", params.sortOrder);
+    if (params?.genre) queryString.set("genre", params.genre);
+    if (params?.mediaType) queryString.set("mediaType", params.mediaType);
+    if (params?.releaseYear) queryString.set("releaseYear", params.releaseYear.toString());
+    if (params?.accessType) queryString.set("accessType", params.accessType);
+    
+    const query = queryString.toString();
+    const url = `/contents${query ? `?${query}` : ""}`;
+    
+    return httpClient.get(url);
 }
 
+// Keep all your other functions as they are...
 export async function getContentById(id: string): Promise<ApiResponse<IContent>> {
-    const res = await fetch(`${BASE_API_URL}/api/v1/contents/${id}`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-        },
-    });
-
-    if (!res.ok) {
-        throw new Error(`Failed to fetch content: ${res.statusText}`);
-    }
-
-    return res.json();
+    return httpClient.get(`/contents/${id}`);
 }
 
 export async function getWatchableContent(id: string): Promise<ApiResponse<IWatchableContent>> {
-    const res = await fetch(`${BASE_API_URL}/api/v1/contents/${id}/watch`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        credentials: "include",
-    });
-
-    if (!res.ok) {
-        throw new Error(`Failed to fetch watchable content: ${res.statusText}`);
-    }
-
-    return res.json();
+    return httpClient.get(`/contents/${id}/watch`);
 }
 
 export async function createContent(payload: IContentCreatePayload): Promise<ApiResponse<IContent>> {
     const formData = new FormData();
 
-    // Add text fields
     formData.append("title", payload.title);
     if (payload.description) formData.append("description", payload.description);
     formData.append("releaseYear", payload.releaseYear.toString());
@@ -83,28 +55,16 @@ export async function createContent(payload: IContentCreatePayload): Promise<Api
     formData.append("accessType", payload.accessType);
     if (payload.ticketPrice) formData.append("ticketPrice", payload.ticketPrice.toString());
 
-    // Add files
     if (payload.posterImage) formData.append("posterImage", payload.posterImage);
     if (payload.trailerVideo) formData.append("trailerVideo", payload.trailerVideo);
     if (payload.streamingVideo) formData.append("streamingVideo", payload.streamingVideo);
 
-    const res = await fetch(`${BASE_API_URL}/api/v1/contents`, {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-    });
-
-    if (!res.ok) {
-        throw new Error(`Failed to create content: ${res.statusText}`);
-    }
-
-    return res.json();
+    return httpClient.post("/contents", formData);
 }
 
 export async function updateContent(payload: IContentUpdatePayload): Promise<ApiResponse<IContent>> {
     const formData = new FormData();
 
-    // Add text fields
     if (payload.title) formData.append("title", payload.title);
     if (payload.description) formData.append("description", payload.description);
     if (payload.releaseYear) formData.append("releaseYear", payload.releaseYear.toString());
@@ -115,52 +75,17 @@ export async function updateContent(payload: IContentUpdatePayload): Promise<Api
     if (payload.accessType) formData.append("accessType", payload.accessType);
     if (payload.ticketPrice !== undefined) formData.append("ticketPrice", payload.ticketPrice.toString());
 
-    // Add files
     if (payload.posterImage) formData.append("posterImage", payload.posterImage);
     if (payload.trailerVideo) formData.append("trailerVideo", payload.trailerVideo);
     if (payload.streamingVideo) formData.append("streamingVideo", payload.streamingVideo);
 
-    const res = await fetch(`${BASE_API_URL}/api/v1/contents/${payload.id}`, {
-        method: "PATCH",
-        body: formData,
-        credentials: "include",
-    });
-
-    if (!res.ok) {
-        throw new Error(`Failed to update content: ${res.statusText}`);
-    }
-
-    return res.json();
+    return httpClient.patch(`/contents/${payload.id}`, formData);
 }
 
 export async function deleteContent(id: string): Promise<ApiResponse<null>> {
-    const res = await fetch(`${BASE_API_URL}/api/v1/contents/${id}`, {
-        method: "DELETE",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        credentials: "include",
-    });
-
-    if (!res.ok) {
-        throw new Error(`Failed to delete content: ${res.statusText}`);
-    }
-
-    return res.json();
+    return httpClient.delete(`/contents/${id}`);
 }
 
 export async function getMyContents(): Promise<ApiResponse<IContent[]>> {
-    const res = await fetch(`${BASE_API_URL}/api/v1/contents/my-contents`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        credentials: "include",
-    });
-
-    if (!res.ok) {
-        throw new Error(`Failed to fetch my contents: ${res.statusText}`);
-    }
-
-    return res.json();
+    return httpClient.get("/contents/my-contents");
 }

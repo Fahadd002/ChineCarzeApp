@@ -1,33 +1,32 @@
 import { IContent } from "@/types/content.types";
 import { ContentCard } from "./ContentCard";
 
+// ContentGrid.tsx
 interface ContentGridProps {
   contents: IContent[];
-  showWatchButton?: boolean;
-  emptyMessage?: string;
+  viewMode?: "grid" | "list";
+  emptyMessage?: React.ReactNode;
 }
 
-export function ContentGrid({
-  contents,
-  showWatchButton = false,
-  emptyMessage = "No content available"
-}: ContentGridProps) {
+export function ContentGrid({ contents, viewMode = "grid", emptyMessage }: ContentGridProps) {
   if (contents.length === 0) {
+    return emptyMessage ? <>{emptyMessage}</> : null;
+  }
+
+  if (viewMode === "list") {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">{emptyMessage}</p>
+      <div className="space-y-4">
+        {contents.map((content) => (
+          <ContentCard key={content.id} content={content} showWatchButton />
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {contents.map((content) => (
-        <ContentCard
-          key={content.id}
-          content={content}
-          showWatchButton={showWatchButton}
-        />
+        <ContentCard key={content.id} content={content} showWatchButton />
       ))}
     </div>
   );
