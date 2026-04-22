@@ -11,32 +11,25 @@ import {
 } from "@/hooks/useServerManagedDataTableFilters";
 import { useServerManagedDataTableSearch } from "@/hooks/useServerManagedDataTableSearch";
 import { useRowActionModalState } from "@/hooks/useRowActionModalState";
-import { getAllSpecialties, getDoctors } from "@/services/contentManager.services";
+import {  getManager } from "@/services/contentManager.services";
 import { PaginationMeta } from "@/types/api.type";
-import { IDoctor } from "@/types/contentManager.types";
-import { ISpecialty } from "@/types/specialty.types";
+import { IContentManager } from "@/types/contentManager.types";
 import { useServerManagedDataTable } from "@/hooks/useServerManagedDataTable";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
-import CreateDoctorFormModal from "./CreateDoctorFormModal";
-import DeleteDoctorConfirmationDialog from "./DeleteDoctorConfirmationDialog";
-import EditDoctorFormModal from "./EditDoctorFormModal";
-import ViewDoctorProfileDialog from "./ViewDoctorProfileDialog";
-import { doctorColumns } from "./doctorsColumns";
+import CreateManagerFormModal from "./CreateManagerFormModal";
+import DeleteManagerConfirmationDialog from "./DeleteManagerConfirmationDialog";
+import EditManagerFormModal from "./EditManagerFormModal";
+import ViewManagerProfileDialog from "./ViewManagerProfileDialog";
+import { managerColumns } from "./ManagerColumns";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 10;
-const SPECIALTIES_FILTER_KEY = "specialties.specialty.title";
-const APPOINTMENT_FEE_FILTER_KEY = "appointmentFee";
-const DOCTOR_FILTER_DEFINITIONS = [
-  serverManagedFilter.single("gender"),
-  serverManagedFilter.multi(SPECIALTIES_FILTER_KEY),
-  serverManagedFilter.range(APPOINTMENT_FEE_FILTER_KEY),
-];
+const DOCTOR_FILTER_DEFINITIONS = [serverManagedFilter.single("gender")];
 
 
-const DoctorsTable = ({ initialQueryString }: { initialQueryString: string }) => {
+const ContentManagerTable = ({ initialQueryString }: { initialQueryString: string }) => {
     const searchParams = useSearchParams();
     const {
       viewingItem,
@@ -49,7 +42,7 @@ const DoctorsTable = ({ initialQueryString }: { initialQueryString: string }) =>
       onEditOpenChange,
       onDeleteOpenChange,
       tableActions,
-    } = useRowActionModalState<IDoctor>();
+    } = useRowActionModalState<IContentManager>();
 
     const {
       queryStringFromUrl,
@@ -85,23 +78,13 @@ const DoctorsTable = ({ initialQueryString }: { initialQueryString: string }) =>
       updateParams,
     });
 
-    const { data : doctorDataResponse, isLoading, isFetching } = useQuery({
-      queryKey: ["doctors", queryString],
-      queryFn: () => getDoctors(queryString)
+    const { data : managerDataResponse, isLoading, isFetching } = useQuery({
+      queryKey: ["managers", queryString],
+      queryFn: () => getManager(queryString)
     });
 
-    const { data: specialtiesResponse, isLoading: isLoadingSpecialties } = useQuery({
-      queryKey: ["specialties"],
-      queryFn: getAllSpecialties,
-      staleTime: 1000 * 60 * 60 * 6,
-      gcTime: 1000 * 60 * 60 * 24,
-    });
 
-    const doctors = doctorDataResponse?.data ?? [];
-    const specialties = useMemo<ISpecialty[]>(() => {
-      return specialtiesResponse?.data ?? [];
-    }, [specialtiesResponse]);
-    const meta: PaginationMeta | undefined = doctorDataResponse?.meta;
+    const managers = managerDataResponse?.data ?? [];
 
     const filterConfigs = useMemo<DataTableFilterConfig[]>(() => {
       return [
@@ -115,38 +98,24 @@ const DoctorsTable = ({ initialQueryString }: { initialQueryString: string }) =>
             { label: "Other", value: "OTHER" },
           ],
         },
-        {
-          id: SPECIALTIES_FILTER_KEY,
-          label: "Specialties",
-          type: "multi-select",
-          options: specialties.map((specialty) => ({
-            label: specialty.title,
-            value: specialty.title,
-          })),
-        },
+        
         {
           id: "appointmentFee",
           label: "Fee Range",
           type: "range",
         },
       ];
-    }, [specialties]);
+    }, []);
 
-    const filterValuesForTable = useMemo<DataTableFilterValues>(() => {
-      return {
-        gender: filterValues.gender,
-        [SPECIALTIES_FILTER_KEY]: filterValues[SPECIALTIES_FILTER_KEY],
-        appointmentFee: filterValues[APPOINTMENT_FEE_FILTER_KEY],
-      };
-    }, [filterValues]);
+    const filterValuesForTable = useMemo<DataTableFilterValues>(() => ({ gender: filterValues.gender }), [filterValues]);
 
     return (
       <>
         <DataTable
-          data={doctors}
-          columns={doctorColumns}
+          data={managers}
+          columns={managerColumns}
           isLoading={isLoading || isFetching || isRouteRefreshPending}
-          emptyMessage="No doctors found."
+          emptyMessage="No managers found."
           sorting={{
             state: optimisticSortingState,
             onSortingChange: handleSortingChange,
@@ -157,7 +126,7 @@ const DoctorsTable = ({ initialQueryString }: { initialQueryString: string }) =>
           }}
           search={{
             initialValue: searchTermFromUrl,
-            placeholder: "Search doctor by name, email...",
+            placeholder: "Search manager by name, email...",
             debounceMs: 700,
             onDebouncedChange: handleDebouncedSearchChange,
           }}
@@ -168,36 +137,31 @@ const DoctorsTable = ({ initialQueryString }: { initialQueryString: string }) =>
             onClearAll: clearAllFilters,
           }}
           toolbarAction={
-            <CreateDoctorFormModal
-              specialties={specialties}
-              isLoadingSpecialties={isLoadingSpecialties}
-            />
+            <CreateManagerFormModal />
           }
-          meta={meta}
+          meta={managerDataResponse?.meta}
           actions={tableActions}
         />
 
-        <EditDoctorFormModal
+        <EditManagerFormModal
           open={isEditModalOpen}
           onOpenChange={onEditOpenChange}
-          doctor={editingItem}
-          specialties={specialties}
-          isLoadingSpecialties={isLoadingSpecialties}
+          manager={editingItem}
         />
 
-        <DeleteDoctorConfirmationDialog
+        <DeleteManagerConfirmationDialog
           open={isDeleteDialogOpen}
           onOpenChange={onDeleteOpenChange}
-          doctor={deletingItem}
+          manager={deletingItem}
         />
 
-        <ViewDoctorProfileDialog
+        <ViewManagerProfileDialog
           open={isViewDialogOpen}
           onOpenChange={onViewOpenChange}
-          doctor={viewingItem}
+          manager={viewingItem}
         />
       </>
     )
 
 }
-export default DoctorsTable
+export default ContentManagerTable

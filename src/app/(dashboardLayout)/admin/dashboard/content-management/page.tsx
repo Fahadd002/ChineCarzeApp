@@ -1,8 +1,8 @@
-import DoctorsTable from "@/components/modules/Admin/DoctorsManagement/DoctorsTable";
-import { getAllSpecialties, getDoctors } from "@/services/contentManager.services";
+import DoctorsTable from "@/components/modules/Admin/ManagerManagement/ManagerTable";
+import { getContentManager } from "@/services/contentManager.services";
 import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
 
-const DoctorsManagementPage = async ({
+const ContentManagementPage = async ({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -30,16 +30,9 @@ const DoctorsManagementPage = async ({
 
   await queryClient.prefetchQuery({
     queryKey: ["doctors", queryString],
-    queryFn: () => getDoctors(queryString),
+    queryFn: () => getContentManager(queryString),
     staleTime: 1000 * 60 * 60, // 1 hour
     gcTime: 1000 * 60 * 60 * 6, // 6 hours
-  });
-
-  await queryClient.prefetchQuery({
-    queryKey: ["specialties"],
-    queryFn: () => getAllSpecialties(),
-    staleTime: 1000 * 60 * 60 * 6, // 6 hours
-    gcTime: 1000 * 60 * 60 * 24, // 24 hours
   });
 
   return (
@@ -49,4 +42,4 @@ const DoctorsManagementPage = async ({
   );
 };
 
-export default DoctorsManagementPage
+export default ContentManagementPage

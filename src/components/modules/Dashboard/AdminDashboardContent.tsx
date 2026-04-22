@@ -1,7 +1,5 @@
 "use client"
 
-import AppointmentBarChart from "@/components/shared/AppointmentBarChart"
-import AppointmentPieChart from "@/components/shared/AppointmentPieChart"
 import StatsCard from "@/components/shared/StatsCard"
 import { getDashboardData } from "@/services/dashboard.services"
 import { ApiResponse } from "@/types/api.type"
@@ -19,7 +17,7 @@ const AdminDashboardContent = () => {
 
     console.log(data);
   return (
-    <div>
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <StatsCard
         title="Total Appointments"
         value={data?.appointmentCount || 0}
@@ -31,14 +29,6 @@ const AdminDashboardContent = () => {
         value={data?.patientCount || 0}
         iconName="Users"
         description="Number of patients registered"
-        />
-
-        <AppointmentBarChart
-        data={data?.barChartData || []}
-        />
-
-        <AppointmentPieChart
-        data={data?.pieChartData || []}
         />
     </div>
   )

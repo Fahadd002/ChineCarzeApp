@@ -21,10 +21,12 @@ type AppFieldProps = {
     label : string;
     type ?: "text" | "email" | "password" | "number" | "textarea";
     placeholder ?: string;
+    step?: string | number;
     append ?: React.ReactNode;
     prepend ?: React.ReactNode;
     className ?: string;
     disabled ?: boolean;
+    required ?: boolean;
 }
 
 const AppField = ({
@@ -32,10 +34,12 @@ const AppField = ({
     label,
     type = "text",
     placeholder,
+    step,
     append,
     prepend,
     className,
     disabled = false,
+    required = false,
 } : AppFieldProps) => {
 
     const firstError = field.state.meta.isTouched && field.state.meta.errors.length > 0 ? getErrorMessage(field.state.meta.errors[0]) : null;
@@ -67,6 +71,7 @@ const AppField = ({
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
                     disabled={disabled}
+                    required={required}
                     aria-invalid={hasError}
                     aria-describedby={hasError ? `${field.name}-error` : undefined}
                     className={cn(
@@ -83,9 +88,11 @@ const AppField = ({
                     type={type}
                     value={field.state.value}
                     placeholder={placeholder}
+                    step={type === "number" ? step : undefined}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
                     disabled={disabled}
+                    required={required}
                     aria-invalid={hasError}
                     aria-describedby={hasError ? `${field.name}-error` : undefined}
                     className={cn(

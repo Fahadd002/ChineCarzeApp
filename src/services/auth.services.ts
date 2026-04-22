@@ -11,11 +11,19 @@ if(!BASE_API_URL){
 
 export async function getNewTokensWithRefreshToken(refreshToken  : string) : Promise<boolean> {
     try {
+        const cookieStore = await cookies();
+        const betterAuthSessionToken = cookieStore.get("better-auth.session_token")?.value;
+
+        // Backend requires both refreshToken + better-auth.session_token to refresh
+        if (!betterAuthSessionToken) {
+            return false;
+        }
+
         const res = await fetch(`${BASE_API_URL}/auth/refresh-token`, {
             method: "POST",
             headers:{
                 "Content-Type": "application/json",
-                Cookie : `refreshToken=${refreshToken}`
+                Cookie : `refreshToken=${refreshToken}; better-auth.session_token=${betterAuthSessionToken}`
             }
         });
 
@@ -25,7 +33,7 @@ export async function getNewTokensWithRefreshToken(refreshToken  : string) : Pro
 
         const {data} = await res.json();
 
-        const { accessToken, refreshToken: newRefreshToken, token } = data;
+        const { accessToken, refreshToken: newRefreshToken, sessionToken } = data;
 
         if(accessToken){
             await setTokenInCookies("accessToken", accessToken);
@@ -35,8 +43,8 @@ export async function getNewTokensWithRefreshToken(refreshToken  : string) : Pro
             await setTokenInCookies("refreshToken", newRefreshToken);
         }
 
-        if(token){
-            await setTokenInCookies("better-auth.session_token", token, 24 * 60 * 60); // 1 day in seconds
+        if(sessionToken){
+            await setTokenInCookies("better-auth.session_token", sessionToken, 24 * 60 * 60); // 1 day in seconds
         }
 
         return true;

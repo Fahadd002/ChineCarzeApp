@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import AppField from "@/components/shared/AppField";
 import AppSubmitButton from "@/components/shared/AppSubmitButton";
 import { Upload, X } from "lucide-react";
+import { AccessType, MediaType } from "@/types/content.types";
 
 const AddContentPage = () => {
   const router = useRouter();
@@ -37,8 +38,8 @@ const AddContentPage = () => {
       director: "",
       cast: [] as string[],
       genres: [] as string[],
-      mediaType: "MOVIE" as "MOVIE" | "TV_SHOW",
-      accessType: "FREE" as "FREE" | "TICKET" | "SUBSCRIPTION",
+      mediaType: MediaType.MOVIE as MediaType,
+      accessType: AccessType.FREE as AccessType,
       ticketPrice: 0,
       posterImage: null as File | null,
       trailerVideo: null as File | null,
@@ -50,6 +51,9 @@ const AddContentPage = () => {
           ...value,
           cast: selectedCast,
           genres: selectedGenres,
+          posterImage: value.posterImage ?? undefined,
+          trailerVideo: value.trailerVideo ?? undefined,
+          streamingVideo: value.streamingVideo ?? undefined,
         };
 
         const response = await mutateAsync(payload);
@@ -66,7 +70,10 @@ const AddContentPage = () => {
     },
   });
 
-  const handleFileChange = (field: string, file: File | null) => {
+  const handleFileChange = (
+    field: "posterImage" | "trailerVideo" | "streamingVideo",
+    file: File | null,
+  ) => {
     if (field === "posterImage" && file) {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -74,7 +81,7 @@ const AddContentPage = () => {
       };
       reader.readAsDataURL(file);
     }
-    form.setFieldValue(field as any, file);
+    form.setFieldValue(field, file);
   };
 
   const addGenre = (genre: string) => {
@@ -222,11 +229,11 @@ const AddContentPage = () => {
                     <label className="text-sm font-medium">Media Type</label>
                     <select
                       value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value as "MOVIE" | "TV_SHOW")}
+                      onChange={(e) => field.handleChange(e.target.value as MediaType)}
                       className="w-full px-3 py-2 border rounded-md"
                     >
-                      <option value="MOVIE">Movie</option>
-                      <option value="TV_SHOW">TV Show</option>
+                      <option value={MediaType.MOVIE}>Movie</option>
+                      <option value={MediaType.TV_SERIES}>TV Series</option>
                     </select>
                   </div>
                 )}
@@ -238,12 +245,12 @@ const AddContentPage = () => {
                     <label className="text-sm font-medium">Access Type</label>
                     <select
                       value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value as "FREE" | "TICKET" | "SUBSCRIPTION")}
+                      onChange={(e) => field.handleChange(e.target.value as AccessType)}
                       className="w-full px-3 py-2 border rounded-md"
                     >
-                      <option value="FREE">Free</option>
-                      <option value="TICKET">Ticket</option>
-                      <option value="SUBSCRIPTION">Subscription</option>
+                      <option value={AccessType.FREE}>Free</option>
+                      <option value={AccessType.TICKET}>Ticket</option>
+                      <option value={AccessType.SUBSCRIPTION}>Subscription</option>
                     </select>
                   </div>
                 )}

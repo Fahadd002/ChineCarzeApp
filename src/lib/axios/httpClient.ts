@@ -3,13 +3,14 @@ import { ApiResponse } from '@/types/api.type';
 import axios from 'axios';
 import { isTokenExpiringSoon } from '../token.ulits';
 import { getNewTokensWithRefreshToken } from '@/services/auth.services';
-import { cookies } from 'next/headers';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 if(!API_BASE_URL) {
     throw new Error('API_BASE_URL is not defined in environment variables');
 }
+
+const isBrowser = typeof window !== "undefined";
 
 async function tryRefereshToken(accessToken: string, refereshToken: string): Promise<void> {
      if(!isTokenExpiringSoon(accessToken)){
@@ -27,15 +28,34 @@ async function tryRefereshToken(accessToken: string, refereshToken: string): Pro
     }
 }
 
-const axiosInstance =  async  () => {
+async function getServerCookieHeader(): Promise<string> {
+    const { cookies } = await import("next/headers");
     const cookieStore = await cookies();
-    const accessToken = cookieStore.get("accessToken")?.value;
-    const refreshToken = cookieStore.get("refreshToken")?.value;
-    if(accessToken && refreshToken){
-        await tryRefereshToken(accessToken, refreshToken);
+    return cookieStore.getAll().map(cookie => `${cookie.name}=${cookie.value}`).join("; ");
+}
+
+const axiosInstance =  async  () => {
+    // Browser: rely on automatic cookie handling
+    if (isBrowser) {
+        return axios.create({
+            baseURL: API_BASE_URL,
+            timeout: 30000,
+            withCredentials: true,
+            headers: {
+                "Content-Type": "application/json",
+            }
+        });
     }
 
-    const cookieHeader = cookieStore.getAll().map(cookie => `${cookie.name}=${cookie.value}`).join("; ");
+    // Server: explicitly forward cookies to API
+    const cookieHeader = await getServerCookieHeader();
+
+    // On server we can attempt proactive refresh when we have tokens
+    const accessToken = cookieHeader.match(/(?:^|;\s*)accessToken=([^;]+)/)?.[1];
+    const refreshToken = cookieHeader.match(/(?:^|;\s*)refreshToken=([^;]+)/)?.[1];
+    if (accessToken && refreshToken) {
+        await tryRefereshToken(decodeURIComponent(accessToken), decodeURIComponent(refreshToken));
+    }
 
     const instance = axios.create({
         baseURL : API_BASE_URL,
@@ -53,6 +73,21 @@ export interface ApiRequestOptions {
     params?: Record<string, unknown>;
     headers?: Record<string, string>;
 }
+
+const isFormDataPayload = (data: unknown): data is FormData => {
+    return typeof FormData !== "undefined" && data instanceof FormData;
+};
+
+const resolveRequestHeaders = (data: unknown, headers?: Record<string, string>) => {
+    const resolvedHeaders = { ...(headers ?? {}) };
+
+    // Let axios/browser set multipart boundaries automatically for FormData.
+    if (isFormDataPayload(data)) {
+        delete resolvedHeaders["Content-Type"];
+    }
+
+    return resolvedHeaders;
+};
 
 const httpGet = async <TData> (endpoint: string, options?: ApiRequestOptions): Promise<ApiResponse<TData>> => {
     try {        
@@ -73,7 +108,7 @@ const httpPost = async <TData> (endpoint: string, data: unknown, options?: ApiRe
         const instance = await axiosInstance();
         const response = await instance.post<ApiResponse<TData>>(endpoint, data, {
             params: options?.params,
-            headers: options?.headers,
+            headers: resolveRequestHeaders(data, options?.headers),
         });
         return response.data;
     } catch (error) {
@@ -87,7 +122,7 @@ const httpPut = async <TData> (endpoint: string, data: unknown, options?: ApiReq
         const instance = await axiosInstance();
         const response = await instance.put<ApiResponse<TData>>(endpoint, data, {
             params: options?.params,
-            headers: options?.headers,
+            headers: resolveRequestHeaders(data, options?.headers),
         });
         return response.data;
     } catch (error) {
@@ -101,7 +136,7 @@ const httpPatch = async <TData> (endpoint: string, data: unknown, options?: ApiR
         const instance = await axiosInstance();
         const response = await instance.patch<ApiResponse<TData>>(endpoint, data, {
             params: options?.params,
-            headers: options?.headers,
+            headers: resolveRequestHeaders(data, options?.headers),
         });
         return response.data;
     }

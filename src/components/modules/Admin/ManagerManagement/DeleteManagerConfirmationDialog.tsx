@@ -1,6 +1,6 @@
 "use client"
 
-import { deleteDoctorAction } from "@/app/(dashboardLayout)/admin/dashboard/doctors-management/_action"
+import { deleteManagerAction } from "@/app/(dashboardLayout)/admin/dashboard/content-management/_action"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,43 +11,43 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { type IDoctor } from "@/types/contentManager.types"
+import { type IContentManager } from "@/types/contentManager.types"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
-interface DeleteDoctorConfirmationDialogProps {
+interface DeleteManagerConfirmationDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  doctor: IDoctor | null
+  manager: IContentManager | null
 }
 
-const DeleteDoctorConfirmationDialog = ({
+const DeleteManagerConfirmationDialog = ({
   open,
   onOpenChange,
-  doctor,
-}: DeleteDoctorConfirmationDialogProps) => {
+  manager,
+}: DeleteManagerConfirmationDialogProps) => {
   const queryClient = useQueryClient()
   const router = useRouter()
 
   const { mutateAsync, isPending } = useMutation({
-    mutationFn: deleteDoctorAction,
+    mutationFn: deleteManagerAction,
   })
 
   const handleConfirmDelete = async () => {
-    if (!doctor) {
-      toast.error("Doctor not found")
+    if (!manager) {
+      toast.error("Manager not found")
       return
     }
 
-    const result = await mutateAsync(String(doctor.id))
+    const result = await mutateAsync(String(manager.id))
 
     if (!result.success) {
-      toast.error(result.message || "Failed to delete doctor")
+      toast.error(result.message || "Failed to delete manager ")
       return
     }
 
-    toast.success(result.message || "Doctor deleted successfully")
+    toast.success(result.message || "Manager deleted successfully")
     onOpenChange(false)
 
     void queryClient.invalidateQueries({ queryKey: ["doctors"] })
@@ -59,10 +59,9 @@ const DeleteDoctorConfirmationDialog = ({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Doctor</AlertDialogTitle>
+          <AlertDialogTitle>Delete Manager</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete {doctor?.name ?? "this doctor"}? This action will mark the doctor and
-            linked user as deleted.
+            Are you sure you want to delete {manager?.name ?? "this manager"}? This action will mark the manager and linked user as deleted.
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -84,4 +83,4 @@ const DeleteDoctorConfirmationDialog = ({
   )
 }
 
-export default DeleteDoctorConfirmationDialog
+export default DeleteManagerConfirmationDialog

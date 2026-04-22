@@ -1,9 +1,9 @@
 "use server"
 
-import { createDoctor, deleteDoctor, getDoctorById, updateDoctor } from "@/services/contentManager.services"
+import { createManager, deleteManager, getManagerById, updateManager } from "@/services/contentManager.services"
 import { type ApiErrorResponse, type ApiResponse } from "@/types/api.type"
-import { type ICreateDoctorPayload, type IDoctor, type IDoctorDetails, type IUpdateDoctorPayload } from "@/types/contentManager.types"
-import { createDoctorServerZodSchema, updateDoctorServerZodSchema } from "@/zod/doctor.validation"
+import { type ICreateContentManagerPayload, type IContentManager, type IContentManagerDetails, type IUpdateContentManagerPayload } from "@/types/contentManager.types"
+import { createContentManagerServerZodSchema, updateContentManagerServerZodSchema } from "@/zod/contentManager.validation"
 
 const getActionErrorMessage = (error: unknown, fallbackMessage: string) => {
   if (
@@ -28,10 +28,10 @@ const getActionErrorMessage = (error: unknown, fallbackMessage: string) => {
   return fallbackMessage
 }
 
-export const createDoctorAction = async (
-  payload: ICreateDoctorPayload,
-): Promise<ApiResponse<IDoctor> | ApiErrorResponse> => {
-  const parsedPayload = createDoctorServerZodSchema.safeParse(payload)
+export const createManagerAction = async (
+  payload: ICreateContentManagerPayload,
+): Promise<ApiResponse<IContentManager> | ApiErrorResponse> => {
+  const parsedPayload = createContentManagerServerZodSchema.safeParse(payload)
 
   if (!parsedPayload.success) {
     return {
@@ -41,7 +41,7 @@ export const createDoctorAction = async (
   }
 
   try {
-    return await createDoctor(parsedPayload.data)
+    return await createManager(parsedPayload.data)
   } catch (error: unknown) {
     return {
       success: false,
@@ -50,11 +50,11 @@ export const createDoctorAction = async (
   }
 }
 
-export const updateDoctorAction = async (
+export const updateManagerAction = async (
   id: string,
-  payload: IUpdateDoctorPayload,
-): Promise<ApiResponse<IDoctor> | ApiErrorResponse> => {
-  const parsedPayload = updateDoctorServerZodSchema.safeParse(payload)
+  payload: IUpdateContentManagerPayload,
+): Promise<ApiResponse<IContentManager> | ApiErrorResponse> => {
+  const parsedPayload = updateContentManagerServerZodSchema.safeParse(payload)
 
   if (!parsedPayload.success) {
     return {
@@ -64,7 +64,7 @@ export const updateDoctorAction = async (
   }
 
   try {
-    return await updateDoctor(id, parsedPayload.data)
+    return await updateManager(id, parsedPayload.data)
   } catch (error: unknown) {
     return {
       success: false,
@@ -73,42 +73,42 @@ export const updateDoctorAction = async (
   }
 }
 
-export const deleteDoctorAction = async (
+export const deleteManagerAction = async (
   id: string,
 ): Promise<ApiResponse<{ message: string }> | ApiErrorResponse> => {
   if (!id) {
     return {
       success: false,
-      message: "Invalid doctor id",
+      message: "Invalid manager id",
     }
   }
 
   try {
-    return await deleteDoctor(id)
+    return await deleteManager(id)
   } catch (error: unknown) {
     return {
       success: false,
-      message: getActionErrorMessage(error, "Failed to delete doctor"),
+      message: getActionErrorMessage(error, "Failed to delete manager"),
     }
   }
 }
 
-export const getDoctorByIdAction = async (
+export const getManagerByIdAction = async (
   id: string,
-): Promise<ApiResponse<IDoctorDetails> | ApiErrorResponse> => {
+): Promise<ApiResponse<IContentManagerDetails> | ApiErrorResponse> => {
   if (!id) {
     return {
       success: false,
-      message: "Invalid doctor id",
+      message: "Invalid manager id",
     }
   }
 
   try {
-    return await getDoctorById(id)
+    return await getManagerById(id)
   } catch (error: unknown) {
     return {
       success: false,
-      message: getActionErrorMessage(error, "Failed to fetch doctor details"),
+      message: getActionErrorMessage(error, "Failed to fetch manager details"),
     }
   }
 }

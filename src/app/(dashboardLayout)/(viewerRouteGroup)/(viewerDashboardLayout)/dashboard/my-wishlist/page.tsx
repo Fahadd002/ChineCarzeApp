@@ -2,7 +2,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getMyWatchList } from "@/services/watchlist.services";
+import { getMyWatchlist } from "@/services/watchlist.services";
 import { ContentGrid } from "@/components/modules/Content/ContentGrid";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -55,7 +55,7 @@ const MyWishlistPage = () => {
         </CardHeader>
         <CardContent>
           {watchlist && watchlist.data && watchlist.data.length > 0 ? (
-            <ContentGrid contents={watchlist.data.map(item => item.content)} />
+            <ContentGrid contents={watchlist.data.map((item) => item.content as any)} />
           ) : (
             <p className="text-muted-foreground">Your wishlist is empty.</p>
           )}

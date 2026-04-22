@@ -2,38 +2,35 @@
 
 import { ApiResponse } from "@/types/api.type";
 import { IContentManager, ICreateContentManagerPayload, IUpdateContentManagerPayload } from "@/types/contentManager.types";
-
-const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-if (!BASE_API_URL) {
-    throw new Error("NEXT_PUBLIC_API_BASE_URL is not defined");
-}
+import { httpClient } from "@/lib/axios/httpClient";
 
 export async function createContentManager(payload: ICreateContentManagerPayload): Promise<ApiResponse<IContentManager>> {
-    const res = await fetch(`${BASE_API_URL}/api/v1/users/create-manager`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-        credentials: "include",
-    });
-
-    if (!res.ok) {
-        throw new Error(`Failed to create content manager: ${res.statusText}`);
-    }
-
-    return res.json();
+    return httpClient.post<IContentManager>("/users/create-manager", payload);
 }
 
-// Note: Other content manager functions like get, update, delete can be added when the backend provides the routes
+// Content manager APIs (some routes may not exist yet in backend).
+// These functions are provided so imports compile; update endpoint paths to match your API.
 
-export const getDoctorById = async (id: string) => {
-    try {
-        const doctor = await httpClient.get<IDoctorDetails>(`/doctors/${id}`);
-        return doctor;
-    } catch (error) {
-        console.log("Error fetching doctor by id:", error);
-        throw error;
-    }
+export async function getContentManager(queryString = ""): Promise<ApiResponse<IContentManager[]>> {
+    const endpoint = queryString ? `/content-managers?${queryString.replace(/^\?/, "")}` : "/content-managers";
+    return httpClient.get<IContentManager[]>(endpoint);
 }
+
+export async function getContentManagerById(id: string): Promise<ApiResponse<IContentManager>> {
+    return httpClient.get<IContentManager>(`/content-managers/${id}`);
+}
+
+export async function updateContentManager(id: string, payload: IUpdateContentManagerPayload): Promise<ApiResponse<IContentManager>> {
+    return httpClient.patch<IContentManager>(`/content-managers/${id}`, payload);
+}
+
+export async function deleteContentManager(id: string): Promise<ApiResponse<{ message: string }>> {
+    return httpClient.delete<{ message: string }>(`/content-managers/${id}`);
+}
+
+// Backward-compatible aliases (existing UI still uses "doctors" naming in a few places)
+export const getManager = getContentManager;
+export const getManagerById = getContentManagerById;
+export const updateManager = updateContentManager;
+export const deleteManager = deleteContentManager;
+export const createManager = createContentManager;
