@@ -46,7 +46,6 @@ const VerifyEmailForm = ({ email }: VerifyEmailFormProps) => {
                 // success
                 const successMessage = result.message || "Email verified successfully.";
                 toast.success(successMessage);
-                router.push(`/login?message=${encodeURIComponent(successMessage)}`);
             } catch (error: any) {
                 console.log(`Verification failed:`, error);
                 const msg = error?.response?.data?.message || error?.message || "Verification failed";

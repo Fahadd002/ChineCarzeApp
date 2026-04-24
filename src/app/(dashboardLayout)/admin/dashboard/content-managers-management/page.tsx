@@ -1,4 +1,4 @@
-import DoctorsTable from "@/components/modules/Admin/ManagerManagement/ManagerTable";
+import ManagerTable from "@/components/modules/Admin/ManagerManagement/ManagerTable";
 import { getContentManager } from "@/services/contentManager.services";
 import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
 
@@ -29,7 +29,7 @@ const ContentManagementPage = async ({
   const queryClient = new QueryClient();
 
   await queryClient.prefetchQuery({
-    queryKey: ["doctors", queryString],
+    queryKey: ["managers", queryString],
     queryFn: () => getContentManager(queryString),
     staleTime: 1000 * 60 * 60, // 1 hour
     gcTime: 1000 * 60 * 60 * 6, // 6 hours
@@ -37,7 +37,7 @@ const ContentManagementPage = async ({
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <DoctorsTable initialQueryString={queryString} />
+      <ManagerTable initialQueryString={queryString} />
     </HydrationBoundary>
   );
 };

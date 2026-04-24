@@ -1,6 +1,6 @@
 export type UserRole = "SUPER_ADMIN" | "ADMIN" | "CONTENT_MANAGER" | "VIEWER";
 
-export const authRoutes = [ "/login", "/register", "/forgot-password", "/reset-password", "/verify-email" ];
+export const authRoutes = [ "/login", "/register", "/forgot-password", "/change-password", "/verify-email" ];
 
 export const isAuthRoute = (pathname : string) => {
     return authRoutes.some((router : string) => router === pathname);

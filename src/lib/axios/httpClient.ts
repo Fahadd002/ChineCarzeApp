@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ApiResponse } from '@/types/api.type';
-import axios from 'axios';
+import axios, { AxiosError, AxiosInstance } from 'axios';
 import { isTokenExpiringSoon } from '../token.ulits';
-import { getNewTokensWithRefreshToken } from '@/services/auth.services';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -12,19 +11,43 @@ if(!API_BASE_URL) {
 
 const isBrowser = typeof window !== "undefined";
 
-async function tryRefereshToken(accessToken: string, refereshToken: string): Promise<void> {
-     if(!isTokenExpiringSoon(accessToken)){
-            return;
-        }
-       const requestHeaders = new Headers();
-       if(requestHeaders.get("x-token-refreshed") === "1"){
-            return;
-       }
-    try {
-       await getNewTokensWithRefreshToken(refereshToken);
+let isRefreshing = false;
+let failedQueue: Array<{
+    resolve: (value?: any) => void;
+    reject: (reason?: any) => void;
+}> = [];
 
+const processQueue = (error: any, token: string | null = null) => {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    
+    isRefreshing = false;
+    failedQueue = [];
+};
+
+async function refreshTokenViaApi(): Promise<boolean> {
+    try {
+        const response = await fetch('/api/auth/refresh-token', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            return false;
+        }
+
+        return true;
     } catch (error: any) {
-        console.error("Error refreshing token in http client:", error);
+        console.error("Error refreshing token via API:", error);
+        return false;
     }
 }
 
@@ -34,10 +57,10 @@ async function getServerCookieHeader(): Promise<string> {
     return cookieStore.getAll().map(cookie => `${cookie.name}=${cookie.value}`).join("; ");
 }
 
-const axiosInstance =  async  () => {
+const createAxiosInstance = async (): Promise<AxiosInstance> => {
     // Browser: rely on automatic cookie handling
     if (isBrowser) {
-        return axios.create({
+        const instance = axios.create({
             baseURL: API_BASE_URL,
             timeout: 30000,
             withCredentials: true,
@@ -45,17 +68,52 @@ const axiosInstance =  async  () => {
                 "Content-Type": "application/json",
             }
         });
+
+        // Add response interceptor to handle token refresh on client side
+        instance.interceptors.response.use(
+            (response) => response,
+            async (error: AxiosError) => {
+                const originalRequest = error.config as any;
+
+                if (error.response?.status === 401 && !originalRequest._retry) {
+                    if (isRefreshing) {
+                        return new Promise((resolve, reject) => {
+                            failedQueue.push({ resolve, reject });
+                        }).then(() => {
+                            return instance(originalRequest);
+                        });
+                    }
+
+                    originalRequest._retry = true;
+                    isRefreshing = true;
+
+                    try {
+                        const success = await refreshTokenViaApi();
+                        if (success) {
+                            processQueue(null);
+                            return instance(originalRequest);
+                        } else {
+                            processQueue(new Error("Token refresh failed"), null);
+                            // Redirect to login
+                            window.location.href = '/login';
+                            return Promise.reject(error);
+                        }
+                    } catch (err) {
+                        processQueue(err, null);
+                        window.location.href = '/login';
+                        return Promise.reject(error);
+                    }
+                }
+
+                return Promise.reject(error);
+            }
+        );
+
+        return instance;
     }
 
     // Server: explicitly forward cookies to API
     const cookieHeader = await getServerCookieHeader();
-
-    // On server we can attempt proactive refresh when we have tokens
-    const accessToken = cookieHeader.match(/(?:^|;\s*)accessToken=([^;]+)/)?.[1];
-    const refreshToken = cookieHeader.match(/(?:^|;\s*)refreshToken=([^;]+)/)?.[1];
-    if (accessToken && refreshToken) {
-        await tryRefereshToken(decodeURIComponent(accessToken), decodeURIComponent(refreshToken));
-    }
 
     const instance = axios.create({
         baseURL : API_BASE_URL,
@@ -91,7 +149,7 @@ const resolveRequestHeaders = (data: unknown, headers?: Record<string, string>) 
 
 const httpGet = async <TData> (endpoint: string, options?: ApiRequestOptions): Promise<ApiResponse<TData>> => {
     try {        
-        const instance = await axiosInstance();
+        const instance = await createAxiosInstance();
         const response = await instance.get<ApiResponse<TData>>(endpoint, {
             params: options?.params,
             headers: options?.headers,
@@ -105,7 +163,7 @@ const httpGet = async <TData> (endpoint: string, options?: ApiRequestOptions): P
 
 const httpPost = async <TData> (endpoint: string, data: unknown, options?: ApiRequestOptions): Promise<ApiResponse<TData>> => {
     try {
-        const instance = await axiosInstance();
+        const instance = await createAxiosInstance();
         const response = await instance.post<ApiResponse<TData>>(endpoint, data, {
             params: options?.params,
             headers: resolveRequestHeaders(data, options?.headers),
@@ -119,7 +177,7 @@ const httpPost = async <TData> (endpoint: string, data: unknown, options?: ApiRe
 
 const httpPut = async <TData> (endpoint: string, data: unknown, options?: ApiRequestOptions): Promise<ApiResponse<TData>> => {
     try {
-        const instance = await axiosInstance();
+        const instance = await createAxiosInstance();
         const response = await instance.put<ApiResponse<TData>>(endpoint, data, {
             params: options?.params,
             headers: resolveRequestHeaders(data, options?.headers),
@@ -133,7 +191,7 @@ const httpPut = async <TData> (endpoint: string, data: unknown, options?: ApiReq
 
 const httpPatch = async <TData> (endpoint: string, data: unknown, options?: ApiRequestOptions): Promise<ApiResponse<TData>> => {
     try {
-        const instance = await axiosInstance();
+        const instance = await createAxiosInstance();
         const response = await instance.patch<ApiResponse<TData>>(endpoint, data, {
             params: options?.params,
             headers: resolveRequestHeaders(data, options?.headers),
@@ -148,7 +206,7 @@ const httpPatch = async <TData> (endpoint: string, data: unknown, options?: ApiR
 
 const httpDelete = async <TData> (endpoint: string, options?: ApiRequestOptions): Promise<ApiResponse<TData>> => {
     try {
-        const instance = await axiosInstance();
+        const instance = await createAxiosInstance();
         const response = await instance.delete<ApiResponse<TData>>(endpoint, {
             params: options?.params,
             headers: options?.headers,

@@ -17,15 +17,13 @@ async function refreshTokenMiddleware(refreshToken: string): Promise<boolean> {
     }
 }
 
-
 export async function proxy(request: NextRequest) {
     try {
-        const { pathname } = request.nextUrl; // eg /dashboard, /admin/dashboard, /contentManager/dashboard
+        const { pathname } = request.nextUrl;
         const accessToken = request.cookies.get("accessToken")?.value;
         const refreshToken = request.cookies.get("refreshToken")?.value;
 
         const decodedAccessToken = accessToken && jwtUtils.verifyToken(accessToken, process.env.JWT_ACCESS_SECRET as string).data;
-
         const isValidAccessToken = accessToken && jwtUtils.verifyToken(accessToken, process.env.JWT_ACCESS_SECRET as string).success;
 
         let userRole: UserRole | null = null;
@@ -35,82 +33,55 @@ export async function proxy(request: NextRequest) {
         }
 
         const routerOwner = getRouteOwner(pathname);
-
         const unifySuperAdminAndAdminRole = userRole === "SUPER_ADMIN" ? "ADMIN" : userRole;
-
         userRole = unifySuperAdminAndAdminRole;
-
         const isAuth = isAuthRoute(pathname);
 
-
-        //proactively refresh token if refresh token exists and access token is expired or about to expire
+        // Proactively refresh token
         if (isValidAccessToken && refreshToken && (await isTokenExpiringSoon(accessToken))) {
             const requestHeaders = new Headers(request.headers);
-
             const response = NextResponse.next({
                 request: {
                     headers: requestHeaders
-
                 },
             })
 
-
             try {
                 const refreshed = await refreshTokenMiddleware(refreshToken);
-
                 if (refreshed) {
                     requestHeaders.set("x-token-refreshed", "1");
                 }
-
-                return NextResponse.next(
-                    {
-                        request: {
-                            headers: requestHeaders
-                        },
-                        headers: response.headers
-                    }
-                )
+                return NextResponse.next({
+                    request: {
+                        headers: requestHeaders
+                    },
+                    headers: response.headers
+                })
             } catch (error) {
                 console.error("Error refreshing token:", error);
-
             }
-
             return response;
         }
 
-
-        // Rule - 1 : User is logged in (has access token) and trying to access auth route -> allow
+        // Rule - 1 : User is logged in and trying to access auth route -> redirect to dashboard
         if (isAuth && isValidAccessToken) {
             return NextResponse.redirect(new URL(getDefaultDashboardRoute(userRole as UserRole), request.url));
         }
 
-        // Rule - 2 : User is trying to access reset password page
-        if (pathname === "/reset-password") {
-
-            const email = request.nextUrl.searchParams.get("email");
-
-            // case - 1 user has needPasswordChange true
-            //no need for case 1 if need password change is handled from change-password page
-            if (accessToken && email) {
-                const userInfo = await getUserInfo();
-
-                if (userInfo.needPasswordChange) {
-                    return NextResponse.next();
-                } else {
-                    return NextResponse.redirect(new URL(getDefaultDashboardRoute(userRole as UserRole), request.url));
-                }
+        // Rule - 2 : User trying to access change password page - allow all authenticated users
+        if (pathname === "/change-password") {
+            // If user is not logged in, redirect to login
+            if (!accessToken || !isValidAccessToken) {
+                const loginUrl = new URL("/login", request.url);
+                loginUrl.searchParams.set("redirect", pathname);
+                return NextResponse.redirect(loginUrl);
             }
-
-            // Case-2 user coming from forgot password
-
-            if (email) {
-                return NextResponse.next();
-            }
-
-            const loginUrl = new URL("/login", request.url);
-            loginUrl.searchParams.set("redirect", pathname);
-            return NextResponse.redirect(loginUrl);
+            // Authenticated users can access change-password page
+            return NextResponse.next();
         }
+
+        // REMOVED: The password change check section that was causing the loop
+        // The loginAction will handle password change redirects instead
 
         // Rule-3 User trying to access Public route -> allow
         if (routerOwner === null) {
@@ -124,8 +95,7 @@ export async function proxy(request: NextRequest) {
             return NextResponse.redirect(loginUrl);
         }
 
-        //Rule - Enforcing user to stay in reset password or verify email page if their needPasswordChange or isEmailVerified flags are not satisfied respectively
-
+        // Rule - Enforcing user to stay in verify email page if email is not verified
         if (accessToken) {
             const userInfo = await getUserInfo();
 
@@ -137,26 +107,10 @@ export async function proxy(request: NextRequest) {
                         verifyEmailUrl.searchParams.set("email", userInfo.email);
                         return NextResponse.redirect(verifyEmailUrl);
                     }
-
                     return NextResponse.next();
                 }
 
                 if (userInfo.emailVerified && pathname === "/verify-email") {
-                    return NextResponse.redirect(new URL(getDefaultDashboardRoute(userRole as UserRole), request.url));
-                }
-
-                // need password change scenario
-                if (userInfo.needPasswordChange) {
-                    if (pathname !== "/reset-password") {
-                        const resetPasswordUrl = new URL("/reset-password", request.url);
-                        resetPasswordUrl.searchParams.set("email", userInfo.email);
-                        return NextResponse.redirect(resetPasswordUrl);
-                    }
-
-                    return NextResponse.next();
-                }
-
-                if (!userInfo.needPasswordChange && pathname === "/reset-password") {
                     return NextResponse.redirect(new URL(getDefaultDashboardRoute(userRole as UserRole), request.url));
                 }
             }
@@ -167,8 +121,7 @@ export async function proxy(request: NextRequest) {
             return NextResponse.next();
         }
 
-        //Rule-6 User trying to visit role based protected but doesn't have required role -> redirect to their default dashboard
-
+        // Rule-6 User trying to visit role based protected but doesn't have required role -> redirect to their default dashboard
         if (routerOwner === "ADMIN" || routerOwner === "CONTENT_MANAGER" || routerOwner === "VIEWER") {
             if (routerOwner !== userRole) {
                 return NextResponse.redirect(new URL(getDefaultDashboardRoute(userRole as UserRole), request.url));
@@ -184,13 +137,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except for the ones starting with:
-         * - api (API routes)
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico, sitemap.xml, robots.txt (metadata files)
-         */
         '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.well-known).*)',
     ]
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { createManagerAction } from "@/app/(dashboardLayout)/admin/dashboard/content-management/_action"
+import { createManagerAction } from "@/app/(dashboardLayout)/admin/dashboard/content-managers-management/_action"
 import AppField from "@/components/shared/form/AppField"
 import AppSubmitButton from "@/components/shared/form/AppSubmitButton"
 import { Button } from "@/components/ui/button"
@@ -54,8 +54,8 @@ const CreateManagerFormModal = () => {
       setOpen(false)
       form.reset()
 
-      void queryClient.invalidateQueries({ queryKey: ["doctors"] })
-      void queryClient.refetchQueries({ queryKey: ["doctors"], type: "active" })
+      void queryClient.invalidateQueries({ queryKey: ["managers"] })
+      void queryClient.refetchQueries({ queryKey: ["managers"], type: "active" })
       router.refresh()
     },
   })

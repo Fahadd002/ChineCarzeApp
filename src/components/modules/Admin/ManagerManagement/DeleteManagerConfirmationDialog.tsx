@@ -1,6 +1,6 @@
 "use client"
 
-import { deleteManagerAction } from "@/app/(dashboardLayout)/admin/dashboard/content-management/_action"
+import { deleteManagerAction } from "@/app/(dashboardLayout)/admin/dashboard/content-managers-management/_action"
 import {
   AlertDialog,
   AlertDialogAction,

@@ -12,7 +12,6 @@ import {
 import { useServerManagedDataTableSearch } from "@/hooks/useServerManagedDataTableSearch";
 import { useRowActionModalState } from "@/hooks/useRowActionModalState";
 import {  getManager } from "@/services/contentManager.services";
-import { PaginationMeta } from "@/types/api.type";
 import { IContentManager } from "@/types/contentManager.types";
 import { useServerManagedDataTable } from "@/hooks/useServerManagedDataTable";
 import { useQuery } from "@tanstack/react-query";
@@ -26,7 +25,7 @@ import { managerColumns } from "./ManagerColumns";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 10;
-const DOCTOR_FILTER_DEFINITIONS = [serverManagedFilter.single("gender")];
+const MANAGER_FILTER_DEFINITIONS = [serverManagedFilter.single("gender")];
 
 
 const ContentManagerTable = ({ initialQueryString }: { initialQueryString: string }) => {
@@ -74,7 +73,7 @@ const ContentManagerTable = ({ initialQueryString }: { initialQueryString: strin
       clearAllFilters,
     } = useServerManagedDataTableFilters({
       searchParams,
-      definitions: DOCTOR_FILTER_DEFINITIONS,
+      definitions: MANAGER_FILTER_DEFINITIONS,
       updateParams,
     });
 
@@ -83,6 +82,10 @@ const ContentManagerTable = ({ initialQueryString }: { initialQueryString: strin
       queryFn: () => getManager(queryString)
     });
 
+  console.log('Full API Response:', managerDataResponse);
+        console.log('First manager:', managerDataResponse?.data?.[0]);
+        console.log('User object:', managerDataResponse?.data?.[0]?.user);
+        console.log('User status:', managerDataResponse?.data?.[0]?.user?.status);
 
     const managers = managerDataResponse?.data ?? [];
 
@@ -97,12 +100,6 @@ const ContentManagerTable = ({ initialQueryString }: { initialQueryString: strin
             { label: "Female", value: "FEMALE" },
             { label: "Other", value: "OTHER" },
           ],
-        },
-        
-        {
-          id: "appointmentFee",
-          label: "Fee Range",
-          type: "range",
         },
       ];
     }, []);

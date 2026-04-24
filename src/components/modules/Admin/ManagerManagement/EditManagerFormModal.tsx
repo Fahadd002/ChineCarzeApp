@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { updateManagerAction } from "@/app/(dashboardLayout)/admin/dashboard/content-management/_action"
+import { updateManagerAction } from "@/app/(dashboardLayout)/admin/dashboard/content-managers-management/_action"
 import AppField from "@/components/shared/form/AppField"
 import AppSubmitButton from "@/components/shared/form/AppSubmitButton"
 import { Button } from "@/components/ui/button"

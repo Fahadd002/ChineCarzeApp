@@ -34,14 +34,3 @@ export interface IVerifyEmailResponse {
         emailVerified: boolean;
     }
 }
-
-export interface IVerifyEmailResponse {
-    success: boolean;
-    message: string;
-    user?: {
-        name: string;
-        email: string;
-        role: string;
-        emailVerified: boolean;
-    }
-}

@@ -1,6 +1,6 @@
 "use client"
 
-import { getManagerByIdAction } from "@/app/(dashboardLayout)/admin/dashboard/content-management/_action"
+import { getManagerByIdAction } from "@/app/(dashboardLayout)/admin/dashboard/content-managers-management/_action"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { type IContentManagerDetails, type IContentManager } from "@/types/contentManager.types"
