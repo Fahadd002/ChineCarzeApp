@@ -26,16 +26,16 @@ export const getCommonNavItems = (role : UserRole) : NavSection[] => {
                 },
             ]
         },
-        {
-            title : "Settings",
-            items : [
-                {
-                    title : "Change Password",
-                    href : "change-password",
-                    icon : "Settings"
-                }
-            ]
-        }
+        // {
+        //     title : "Settings",
+        //     items : [
+        //         {
+        //             title : "Change Password",
+        //             href : "/change-password",
+        //             icon : "Settings"
+        //         }
+        //     ]
+        // }
     ]
 }
 

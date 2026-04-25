@@ -4,6 +4,8 @@
 import { getDefaultDashboardRoute, isValidRedirectForRole, UserRole } from "@/lib/authUtils";
 import { httpClient } from "@/lib/axios/httpClient";
 import { setTokenInCookies } from "@/lib/token.ulits";
+import { deleteCookie } from "@/lib/cookie.utils";
+import { forgotPassword } from "@/services/auth.services";
 import { ApiErrorResponse } from "@/types/api.type";
 import { ILoginResponse } from "@/types/auth.type";
 import { ILoginPayload, loginZodSchema } from "@/zod/auth.validation";
@@ -20,6 +22,11 @@ export const loginAction = async (payload: ILoginPayload, redirectPath?: string)
         }
     }
     try {
+        // Clear any existing auth cookies before setting new ones
+        await deleteCookie("accessToken");
+        await deleteCookie("refreshToken");
+        await deleteCookie("better-auth.session_token");
+
         const response = await httpClient.post<ILoginResponse>("/auth/login", parsedPayload.data);
 
         const { accessToken, refreshToken, token, user } = response.data;
@@ -29,7 +36,8 @@ export const loginAction = async (payload: ILoginPayload, redirectPath?: string)
         await setTokenInCookies("better-auth.session_token", token, 24 * 60 * 60);
 
         if (needPasswordChange) {
-            redirect(`/change-password?email=${email}`);
+            await forgotPassword(email);
+            redirect(`/reset-password?email=${email}`);
         } else {
             const targetPath = redirectPath && isValidRedirectForRole(redirectPath, role as UserRole) 
                 ? redirectPath 

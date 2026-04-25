@@ -19,12 +19,12 @@ const getErrorMessage = (error : unknown) : string => {
 type AppFieldProps = {
     field : AnyFieldApi;
     label : string;
-    type ?: "text" | "email" | "password" | "number" | "textarea";
+    type ?: "text" | "email" | "password" | "number" | "textarea" | "url";
     placeholder ?: string;
     step?: string | number;
     append ?: React.ReactNode;
     prepend ?: React.ReactNode;
-    className ?: string;
+    className ?: string;        
     disabled ?: boolean;
     required ?: boolean;
 }

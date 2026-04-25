@@ -10,7 +10,6 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 interface VerifyEmailFormProps {
@@ -19,8 +18,6 @@ interface VerifyEmailFormProps {
 
 const VerifyEmailForm = ({ email }: VerifyEmailFormProps) => {
     const [serverError, setServerError] = useState<string | null>(null);
-
-    const router = useRouter();
 
     const { mutateAsync, isPending } = useMutation({
         mutationFn: (payload: IVerifyEmailPayload) => verifyEmailAction(payload),

@@ -9,8 +9,7 @@ import { IContent } from "@/types/content.types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Play, Star, Eye, Calendar, User, Tag, BookmarkPlus } from "lucide-react";
+import { Play, Eye, Calendar, User, Tag, BookmarkPlus } from "lucide-react";
 import { ReviewSection } from "./ReviewSection";
 import { toast } from "sonner";
 

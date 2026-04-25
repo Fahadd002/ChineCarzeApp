@@ -110,9 +110,9 @@ export enum AccessType {
 export interface IContentCreatePayload {
     title: string;
     description?: string;
-    posterImage?: File;
-    trailerVideo?: File;
-    streamingVideo?: File;
+    posterImage?: File;           // Still a File for poster upload
+    trailerVideo?: string;        // URL string instead of File
+    streamingVideo?: string;      // URL string instead of File
     releaseYear: number;
     director?: string;
     cast: string[];

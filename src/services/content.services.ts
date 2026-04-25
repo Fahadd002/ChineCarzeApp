@@ -1,5 +1,3 @@
-"use server";
-
 import { httpClient } from "@/lib/axios/httpClient";
 import { ApiResponse } from "@/types/api.type";
 import { IContent, IContentCreatePayload, IContentUpdatePayload, IWatchableContent } from "@/types/content.types";
@@ -10,7 +8,7 @@ export async function getAllContents(params?: {
     searchTerm?: string;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
-    genre?: string; // Can be comma-separated like "Action,Comedy"
+    genre?: string;
     mediaType?: string;
     releaseYear?: number;
     accessType?: string;
@@ -33,7 +31,6 @@ export async function getAllContents(params?: {
     return httpClient.get(url);
 }
 
-// Keep all your other functions as they are...
 export async function getContentById(id: string): Promise<ApiResponse<IContent>> {
     return httpClient.get(`/contents/${id}`);
 }
@@ -47,6 +44,8 @@ export async function createContent(payload: IContentCreatePayload): Promise<Api
 
     formData.append("title", payload.title);
     if (payload.description) formData.append("description", payload.description);
+    if (payload.trailerVideo) formData.append("trailerUrl", payload.trailerVideo);
+    if (payload.streamingVideo) formData.append("streamingUrl", payload.streamingVideo);
     formData.append("releaseYear", payload.releaseYear.toString());
     if (payload.director) formData.append("director", payload.director);
     formData.append("cast", JSON.stringify(payload.cast));
@@ -56,8 +55,6 @@ export async function createContent(payload: IContentCreatePayload): Promise<Api
     if (payload.ticketPrice) formData.append("ticketPrice", payload.ticketPrice.toString());
 
     if (payload.posterImage) formData.append("posterImage", payload.posterImage);
-    if (payload.trailerVideo) formData.append("trailerVideo", payload.trailerVideo);
-    if (payload.streamingVideo) formData.append("streamingVideo", payload.streamingVideo);
 
     return httpClient.post("/contents", formData);
 }
@@ -67,6 +64,8 @@ export async function updateContent(payload: IContentUpdatePayload): Promise<Api
 
     if (payload.title) formData.append("title", payload.title);
     if (payload.description) formData.append("description", payload.description);
+    if (payload.trailerVideo) formData.append("trailerUrl", payload.trailerVideo);
+    if (payload.streamingVideo) formData.append("streamingUrl", payload.streamingVideo);
     if (payload.releaseYear) formData.append("releaseYear", payload.releaseYear.toString());
     if (payload.director) formData.append("director", payload.director);
     if (payload.cast) formData.append("cast", JSON.stringify(payload.cast));
@@ -76,8 +75,6 @@ export async function updateContent(payload: IContentUpdatePayload): Promise<Api
     if (payload.ticketPrice !== undefined) formData.append("ticketPrice", payload.ticketPrice.toString());
 
     if (payload.posterImage) formData.append("posterImage", payload.posterImage);
-    if (payload.trailerVideo) formData.append("trailerVideo", payload.trailerVideo);
-    if (payload.streamingVideo) formData.append("streamingVideo", payload.streamingVideo);
 
     return httpClient.patch(`/contents/${payload.id}`, formData);
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -42,8 +43,8 @@ const AddContentPage = () => {
       accessType: AccessType.FREE as AccessType,
       ticketPrice: 0,
       posterImage: null as File | null,
-      trailerVideo: null as File | null,
-      streamingVideo: null as File | null,
+      trailerVideo: "" as string,
+      streamingVideo: "" as string,
     },
     onSubmit: async ({ value }) => {
       try {
@@ -52,8 +53,8 @@ const AddContentPage = () => {
           cast: selectedCast,
           genres: selectedGenres,
           posterImage: value.posterImage ?? undefined,
-          trailerVideo: value.trailerVideo ?? undefined,
-          streamingVideo: value.streamingVideo ?? undefined,
+          trailerVideo: value.trailerVideo || undefined,
+          streamingVideo: value.streamingVideo || undefined,
         };
 
         const response = await mutateAsync(payload);
@@ -71,7 +72,7 @@ const AddContentPage = () => {
   });
 
   const handleFileChange = (
-    field: "posterImage" | "trailerVideo" | "streamingVideo",
+    field: "posterImage",
     file: File | null,
   ) => {
     if (field === "posterImage" && file) {
@@ -129,8 +130,9 @@ const AddContentPage = () => {
             }}
             className="space-y-6"
           >
-            {/* Title */}
-            <form.Field name="title">
+            <form.Field
+              name="title"
+            >
               {(field) => (
                 <AppField
                   field={field}
@@ -142,7 +144,6 @@ const AddContentPage = () => {
               )}
             </form.Field>
 
-            {/* Description */}
             <form.Field name="description">
               {(field) => (
                 <AppField
@@ -154,7 +155,6 @@ const AddContentPage = () => {
               )}
             </form.Field>
 
-            {/* Release Year & Director */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <form.Field name="releaseYear">
                 {(field) => (
@@ -180,7 +180,6 @@ const AddContentPage = () => {
               </form.Field>
             </div>
 
-            {/* Cast */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Cast</label>
               <div className="flex gap-2">
@@ -204,7 +203,6 @@ const AddContentPage = () => {
               </div>
             </div>
 
-            {/* Genres */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Genres</label>
               <div className="flex flex-wrap gap-2">
@@ -221,7 +219,6 @@ const AddContentPage = () => {
               </div>
             </div>
 
-            {/* Media Type & Access Type */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <form.Field name="mediaType">
                 {(field) => (
@@ -257,7 +254,6 @@ const AddContentPage = () => {
               </form.Field>
             </div>
 
-            {/* Ticket Price */}
             <form.Field name="accessType">
               {(field) => field.state.value === "TICKET" && (
                 <form.Field name="ticketPrice">
@@ -275,7 +271,6 @@ const AddContentPage = () => {
               )}
             </form.Field>
 
-            {/* File Uploads */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Media Files</h3>
 
@@ -315,31 +310,44 @@ const AddContentPage = () => {
                 </div>
               </div>
 
-              {/* Trailer Video */}
+              {/* Trailer Video URL */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Trailer Video (optional)</label>
-                <input
-                  type="file"
-                  accept="video/*"
-                  onChange={(e) => handleFileChange("trailerVideo", e.target.files?.[0] || null)}
-                  className="w-full px-3 py-2 border rounded-md"
-                />
+                <label className="text-sm font-medium">Trailer Video URL (optional)</label>
+                <form.Field
+                  name="trailerVideo"
+                >
+                  {(field) => (
+                    <AppField
+                      field={field}
+                      label="Title"
+                      type="url"
+                      placeholder="https://example.com/video.mp4"
+                      required
+                    />
+                  )}
+                </form.Field>
               </div>
 
-              {/* Streaming Video */}
+              {/* Streaming Video URL */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Streaming Video</label>
-                <input
-                  type="file"
-                  accept="video/*"
-                  onChange={(e) => handleFileChange("streamingVideo", e.target.files?.[0] || null)}
-                  className="w-full px-3 py-2 border rounded-md"
-                  required
-                />
+                <label className="text-sm font-medium">Streaming Video URL</label>
+                <form.Field
+                  name="streamingVideo"
+                >
+                  {(field) => (
+                    <AppField
+                      field={field}
+                      label="Title"
+                      type="url"
+                      placeholder="https://example.com/video.mp4"
+                      required
+                    />
+                  )}
+                </form.Field>
+
               </div>
             </div>
 
-            {/* Submit Button */}
             <form.Subscribe
               selector={(s) => [s.canSubmit, s.isSubmitting] as const}
             >

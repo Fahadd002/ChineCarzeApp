@@ -1,9 +1,12 @@
-import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   images: {
     domains: ['res.cloudinary.com'],
   },
+  // Increase middleware body size limit (Next.js 15+)
+  middlewareClientMaxBodySize: '50mb',
 };
 
-export default nextConfig;
+module.exports = nextConfig;
+

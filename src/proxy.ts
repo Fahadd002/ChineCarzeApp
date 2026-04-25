@@ -68,15 +68,15 @@ export async function proxy(request: NextRequest) {
             return NextResponse.redirect(new URL(getDefaultDashboardRoute(userRole as UserRole), request.url));
         }
 
-        // Rule - 2 : User trying to access change password page - allow all authenticated users
-        if (pathname === "/change-password") {
+        // Rule - 2 : User trying to access reset password page - allow all authenticated users
+        if (pathname === "/reset-password") {
             // If user is not logged in, redirect to login
             if (!accessToken || !isValidAccessToken) {
                 const loginUrl = new URL("/login", request.url);
                 loginUrl.searchParams.set("redirect", pathname);
                 return NextResponse.redirect(loginUrl);
             }
-            // Authenticated users can access change-password page
+            // Authenticated users can access  change-password page
             return NextResponse.next();
         }
 
