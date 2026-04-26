@@ -132,7 +132,7 @@ export function ContentDetailView({ content }: ContentDetailViewProps) {
                 <Button asChild size="lg" className="flex items-center gap-2">
                   <Link href={`/dashboard/buy-ticket/${content.id}`}>
                     <Play className="h-5 w-5" />
-                    Buy Ticket - ${content.ticketPrice || 9.99}
+                    Buy Ticket - ${content.ticketPrice}
                   </Link>
                 </Button>
               )}

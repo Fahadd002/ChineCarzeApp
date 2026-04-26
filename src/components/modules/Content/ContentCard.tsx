@@ -4,14 +4,32 @@ import { IContent } from "@/types/content.types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, Star, Eye } from "lucide-react";
+import { Play, Star, Eye, Pencil, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface ContentCardProps {
   content: IContent;
   showWatchButton?: boolean;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-export function ContentCard({ content, showWatchButton = false }: ContentCardProps) {
+export function ContentCard({ content, showWatchButton = false, onEdit, onDelete }: ContentCardProps) {
+  const router = useRouter();
+
+  const handleEdit = () => {
+    if (onEdit) {
+      onEdit(content.id);
+    } else {
+      router.push(`/contentManager/dashboard/add-content?id=${content.id}`);
+    }
+  };
+
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(content.id);
+    }
+  };
   return (
     <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg">
       <CardHeader className="p-0">
@@ -84,7 +102,7 @@ export function ContentCard({ content, showWatchButton = false }: ContentCardPro
         )}
       </CardContent>
 
-      <CardFooter className="p-4 pt-0">
+      <CardFooter className="p-4 pt-0 flex flex-col gap-2">
         <div className="flex w-full gap-2">
           <Button asChild variant="outline" className="flex-1">
             <Link href={`/content/${content.id}`}>
@@ -108,6 +126,27 @@ export function ContentCard({ content, showWatchButton = false }: ContentCardPro
             </Button>
           )}
         </div>
+
+        {(onEdit || onDelete) && (
+          <div className="flex w-full gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={handleEdit}
+            >
+              <Pencil className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={handleDelete}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+          </div>
+        )}
       </CardFooter>
     </Card>
   );

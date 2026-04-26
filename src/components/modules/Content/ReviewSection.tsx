@@ -14,6 +14,12 @@ interface ReviewSectionProps {
   contentId: string;
 }
 
+interface ReviewsResponse {
+  averageRating: number;
+  totalReviews: number;
+  reviews: IReview[];
+}
+
 export function ReviewSection({ contentId }: ReviewSectionProps) {
   const [reviews, setReviews] = useState<IReview[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,8 +32,9 @@ export function ReviewSection({ contentId }: ReviewSectionProps) {
   const loadReviews = async () => {
     try {
       const response = await getReviewsByContent(contentId);
-      if (response.success) {
-        setReviews(response.data || []);
+      if (response.success && response.data) {
+        const data = response.data as unknown as ReviewsResponse;
+        setReviews(data.reviews || []);
       }
     } catch (error) {
       console.error("Error loading reviews:", error);

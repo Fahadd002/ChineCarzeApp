@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, startTransition } from "react";
 import { useForm } from "@tanstack/react-form";
-import { useMutation } from "@tanstack/react-query";
-import { createContent } from "@/services/content.services";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { createContent, updateContent, getContentById } from "@/services/content.services";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import AppField from "@/components/shared/AppField";
 import AppSubmitButton from "@/components/shared/AppSubmitButton";
 import { Upload, X } from "lucide-react";
@@ -17,12 +17,32 @@ import { AccessType, MediaType } from "@/types/content.types";
 
 const AddContentPage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const contentId = searchParams.get("id");
+  const isEditing = !!contentId;
+
   const [posterPreview, setPosterPreview] = useState<string | null>(null);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedCast, setSelectedCast] = useState<string[]>([]);
 
+  // Fetch content data if editing
+  const { data: existingContent, isLoading: isLoadingContent } = useQuery({
+    queryKey: ["content", contentId],
+    queryFn: () => getContentById(contentId!),
+    enabled: isEditing,
+  });
+
   const { mutateAsync, isPending } = useMutation({
-    mutationFn: createContent,
+    mutationFn: isEditing 
+      ? (payload: any) => updateContent({ ...payload, id: contentId! })
+      : createContent,
+    onSuccess: () => {
+      toast.success(isEditing ? "Content updated successfully!" : "Content created successfully!");
+      router.push("/contentManager/dashboard/my-contents");
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || (isEditing ? "Failed to update content" : "Failed to create content"));
+    },
   });
 
   const availableGenres = [
@@ -57,19 +77,41 @@ const AddContentPage = () => {
           streamingVideo: value.streamingVideo || undefined,
         };
 
-        const response = await mutateAsync(payload);
-        if (response.success) {
-          toast.success("Content created successfully!");
-          router.push("/contentManager/dashboard/my-contents");
-        } else {
-          toast.error(response.message || "Failed to create content");
-        }
+        await mutateAsync(payload);
       } catch (error: any) {
-        console.error("Error creating content:", error);
-        toast.error("Failed to create content");
+        console.error("Error saving content:", error);
       }
     },
   });
+
+  // ✅ FIXED: Batch all updates using startTransition to prevent cascading renders
+  useEffect(() => {
+    if (isEditing && existingContent?.data) {
+      startTransition(() => {
+        const content = existingContent.data;
+        
+        // Batch all form field updates
+        form.setFieldValue("title", content.title);
+        form.setFieldValue("description", content.description || "");
+        form.setFieldValue("releaseYear", content.releaseYear);
+        form.setFieldValue("director", content.director || "");
+        form.setFieldValue("cast", content.cast || []);
+        form.setFieldValue("genres", content.genres || []);
+        form.setFieldValue("mediaType", content.mediaType || MediaType.MOVIE);
+        form.setFieldValue("accessType", content.accessType || AccessType.FREE);
+        form.setFieldValue("ticketPrice", content.ticketPrice || 0);
+        form.setFieldValue("trailerVideo", content.trailerUrl || "");
+        form.setFieldValue("streamingVideo", content.streamingUrl || "");
+        
+        // Batch all state updates
+        if (content.posterUrl) {
+          setPosterPreview(content.posterUrl);
+        }
+        setSelectedCast(content.cast || []);
+        setSelectedGenres(content.genres || []);
+      });
+    }
+  }, [isEditing, existingContent]); // Remove 'form' from dependencies to avoid unnecessary re-runs
 
   const handleFileChange = (
     field: "posterImage",
@@ -108,10 +150,22 @@ const AddContentPage = () => {
     setSelectedCast(selectedCast.filter(m => m !== member));
   };
 
+  // Show loading state while fetching content for editing
+  if (isEditing && isLoadingContent) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading content...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Add New Content</h1>
+        <h1 className="text-3xl font-bold">{isEditing ? "Edit Content" : "Add New Content"}</h1>
         <Button variant="outline" onClick={() => router.back()}>
           Cancel
         </Button>
@@ -130,9 +184,7 @@ const AddContentPage = () => {
             }}
             className="space-y-6"
           >
-            <form.Field
-              name="title"
-            >
+            <form.Field name="title">
               {(field) => (
                 <AppField
                   field={field}
@@ -255,7 +307,7 @@ const AddContentPage = () => {
             </div>
 
             <form.Field name="accessType">
-              {(field) => field.state.value === "TICKET" && (
+              {(field) => field.state.value === AccessType.TICKET && (
                 <form.Field name="ticketPrice">
                   {(priceField) => (
                     <AppField
@@ -313,16 +365,13 @@ const AddContentPage = () => {
               {/* Trailer Video URL */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Trailer Video URL (optional)</label>
-                <form.Field
-                  name="trailerVideo"
-                >
+                <form.Field name="trailerVideo">
                   {(field) => (
                     <AppField
                       field={field}
-                      label="Title"
+                      label="Trailer URL"
                       type="url"
                       placeholder="https://example.com/video.mp4"
-                      required
                     />
                   )}
                 </form.Field>
@@ -331,20 +380,17 @@ const AddContentPage = () => {
               {/* Streaming Video URL */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Streaming Video URL</label>
-                <form.Field
-                  name="streamingVideo"
-                >
+                <form.Field name="streamingVideo">
                   {(field) => (
                     <AppField
                       field={field}
-                      label="Title"
+                      label="Streaming URL"
                       type="url"
                       placeholder="https://example.com/video.mp4"
                       required
                     />
                   )}
                 </form.Field>
-
               </div>
             </div>
 
@@ -354,10 +400,10 @@ const AddContentPage = () => {
               {([canSubmit, isSubmitting]) => (
                 <AppSubmitButton
                   isPending={isSubmitting || isPending}
-                  pendingLabel="Creating Content..."
+                  pendingLabel={isEditing ? "Updating Content..." : "Creating Content..."}
                   disabled={!canSubmit}
                 >
-                  Create Content
+                  {isEditing ? "Update Content" : "Create Content"}
                 </AppSubmitButton>
               )}
             </form.Subscribe>

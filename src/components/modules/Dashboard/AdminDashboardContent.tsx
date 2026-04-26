@@ -24,12 +24,12 @@ const AdminDashboardContent = () => {
         iconName="CalendarDays"
         description="Number of appointments scheduled"
         />
-        <StatsCard
+        {/* <StatsCard
         title="Total Patients"
         value={data?.patientCount || 0}
         iconName="Users"
         description="Number of patients registered"
-        />
+        /> */}
     </div>
   )
 }

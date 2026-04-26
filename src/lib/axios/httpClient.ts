@@ -58,15 +58,12 @@ async function getServerCookieHeader(): Promise<string> {
 }
 
 const createAxiosInstance = async (): Promise<AxiosInstance> => {
-    // Browser: rely on automatic cookie handling
+    // Browser: rely on automatic Content-Type based on data
     if (isBrowser) {
         const instance = axios.create({
             baseURL: API_BASE_URL,
             timeout: 30000,
             withCredentials: true,
-            headers: {
-                "Content-Type": "application/json",
-            }
         });
 
         // Add response interceptor to handle token refresh on client side
@@ -119,7 +116,6 @@ const createAxiosInstance = async (): Promise<AxiosInstance> => {
         baseURL : API_BASE_URL,
         timeout : 30000,
         headers:{
-            'Content-Type' : 'application/json',
             'Cookie' : cookieHeader
         }
     })

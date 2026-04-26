@@ -1,19 +1,38 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { getMyContents } from "@/services/content.services";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getMyContents, deleteContent } from "@/services/content.services";
 import { ContentGrid } from "@/components/modules/Content/ContentGrid";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 const MyContentsPage = () => {
+  const queryClient = useQueryClient();
   const { data: contents, isLoading, error } = useQuery({
     queryKey: ["my-contents"],
     queryFn: getMyContents,
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteContent,
+    onSuccess: () => {
+      toast.success("Content deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["my-contents"] });
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "Failed to delete content");
+    },
+  });
+
+  const handleDelete = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this content?")) {
+      deleteMutation.mutate(id);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -71,7 +90,10 @@ const MyContentsPage = () => {
       <Card>
         <CardContent className="p-6">
           {contents && contents.data && contents.data.length > 0 ? (
-            <ContentGrid contents={contents.data} />
+            <ContentGrid 
+              contents={contents.data} 
+              onDelete={handleDelete}
+            />
           ) : (
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-4">You haven't added any content yet.</p>
