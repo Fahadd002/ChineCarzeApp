@@ -1,20 +1,24 @@
 "use client";
 
+import { useState } from "react";
 import { useParams } from "next/navigation";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { getContentById } from "@/services/content.services";
-import { purchaseTicket } from "@/services/ticket.services";
+import { createCheckoutSession } from "@/services/ticket.services";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { AlertTriangle, CreditCard, Ticket } from "lucide-react";
 
 const BuyTicketPage = () => {
   const params = useParams();
   const contentId = params.contentId as string;
   const router = useRouter();
+
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
   const { data: content, isLoading, error } = useQuery({
     queryKey: ["content", contentId],
@@ -22,29 +26,31 @@ const BuyTicketPage = () => {
     enabled: !!contentId,
   });
 
-  const { mutateAsync: purchase, isPending } = useMutation({
-    mutationFn: (payload: { contentId: string; paymentMethodId: string }) =>
-      purchaseTicket(payload),
-  });
-
-  const handlePurchase = async () => {
+  const handleBuyTicket = async () => {
+    setIsPurchasing(true);
     try {
-      // For now, using a dummy payment method ID
-      // In a real app, this would come from Stripe or another payment processor
-      const response = await purchase({
-        contentId,
-        paymentMethodId: "dummy_payment_method",
-      });
-
-      if (response.success) {
-        toast.success("Ticket purchased successfully!");
-        router.push("/dashboard/purchase-history");
-      } else {
-        toast.error(response.message || "Failed to purchase ticket");
+      // Create Stripe checkout session (also creates/updates ticket)
+      const sessionResponse = await createCheckoutSession(contentId);
+      if (!sessionResponse.success) {
+        // Check if already purchased
+        if (sessionResponse.message?.includes("already purchased")) {
+          toast.info("You already have a ticket for this content");
+          router.push("/dashboard/my-tickets");
+          return;
+        }
+        throw new Error(sessionResponse.message || "Failed to create checkout session");
       }
-    } catch (error) {
-      console.error("Error purchasing ticket:", error);
-      toast.error("Failed to purchase ticket");
+
+      if (!sessionResponse.data?.url) {
+        throw new Error("No checkout URL received");
+      }
+
+      // Redirect to Stripe
+      window.location.href = sessionResponse.data.url;
+    } catch (error: any) {
+      console.error("Payment error:", error);
+      toast.error(error?.message || "Failed to initiate payment");
+      setIsPurchasing(false);
     }
   };
 
@@ -78,13 +84,49 @@ const BuyTicketPage = () => {
     );
   }
 
-  const contentData = content.data;
+   const contentData = content.data;
+
+  // Verify this content requires a ticket
+  if (contentData.accessType !== "TICKET") {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Invalid Purchase</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-red-500">This content does not require a ticket purchase.</p>
+            <Button asChild className="mt-4">
+              <a href={`/content/${contentId}`}>Back to Content</a>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+   if (!contentData.ticketPrice || contentData.ticketPrice <= 0) {
+     return (
+       <div className="space-y-6">
+         <Card>
+           <CardHeader>
+             <CardTitle>Buy Ticket</CardTitle>
+           </CardHeader>
+           <CardContent>
+             <p className="text-red-500">This content does not have a valid ticket price.</p>
+           </CardContent>
+         </Card>
+       </div>
+     );
+   }
+
+   const ticketPrice = contentData.ticketPrice ?? 0;
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Buy Ticket</CardTitle>
+          <CardTitle>Complete Your Purchase</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex gap-6">
@@ -121,7 +163,7 @@ const BuyTicketPage = () => {
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold">${contentData.ticketPrice || 9.99}</p>
+                <p className="text-2xl font-bold">${ticketPrice.toFixed(2)}</p>
                 <p className="text-sm text-muted-foreground">USD</p>
               </div>
             </div>
@@ -129,16 +171,36 @@ const BuyTicketPage = () => {
 
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold mb-4">Payment Method</h3>
-            <p className="text-muted-foreground mb-4">
-              Payment integration will be implemented with Stripe.
-              For now, this is a demo purchase.
-            </p>
+            <div className="flex items-start gap-3 p-4 border border-blue-200 bg-blue-50 rounded-lg">
+              <CreditCard className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div className="text-sm text-blue-800">
+                <p className="font-medium">Secure Payment via Stripe</p>
+                <p>You'll be redirected to Stripe's secure payment page to complete your purchase.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 pt-4">
             <Button
-              onClick={handlePurchase}
-              disabled={isPending}
+              onClick={handleBuyTicket}
+              disabled={isPurchasing}
               className="w-full"
+              size="lg"
             >
-              {isPending ? "Processing..." : `Purchase for $${contentData.ticketPrice || 9.99}`}
+              {isPurchasing ? (
+                <>
+                  <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                  Redirecting to Payment...
+                </>
+              ) : (
+                <>
+                  <Ticket className="h-5 w-5 mr-2" />
+                  Pay ${ticketPrice.toFixed(2)} and Get Ticket
+                </>
+              )}
+            </Button>
+            <Button asChild variant="outline">
+              <a href={`/content/${contentId}`}>Cancel</a>
             </Button>
           </div>
         </CardContent>

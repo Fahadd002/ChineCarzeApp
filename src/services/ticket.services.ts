@@ -8,7 +8,10 @@ export async function getMyTickets(): Promise<ApiResponse<ITicket[]>> {
 
 export async function purchaseTicket(payload: {
     contentId: string;
-    paymentMethodId: string;
 }): Promise<ApiResponse<ITicket>> {
     return httpClient.post<ITicket>("/tickets", payload);
+}
+
+export async function createCheckoutSession(contentId: string): Promise<ApiResponse<{ url: string }>> {
+    return httpClient.post<{ url: string }>("/payments/checkout", { contentId });
 }
