@@ -20,18 +20,45 @@ import { toast } from "sonner";
 
 // Helper to convert YouTube URL to embed URL
 function getYouTubeEmbedUrl(url: string): string | null {
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
-  ];
-
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match && match[1]) {
-      return `https://www.youtube.com/embed/${match[1]}?autoplay=0`;
+  try {
+    // Handle youtu.be short URLs (e.g., https://youtu.be/kegFziem1-I)
+    if (url.includes('youtu.be/')) {
+      const videoId = url.split('youtu.be/')[1]?.split('?')[0]?.split('#')[0];
+      if (videoId && videoId.length === 11) {
+        return `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`;
+      }
     }
+
+    // Handle youtube.com/watch?v=VIDEO_ID
+    if (url.includes('youtube.com/watch')) {
+      const urlObj = new URL(url);
+      const videoId = urlObj.searchParams.get('v');
+      if (videoId && videoId.length === 11) {
+        return `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`;
+      }
+    }
+
+    // Handle youtube.com/embed/VIDEO_ID
+    if (url.includes('youtube.com/embed/')) {
+      const parts = url.split('youtube.com/embed/');
+      const videoId = parts[1]?.split('?')[0]?.split('#')[0];
+      if (videoId && videoId.length === 11) {
+        return `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`;
+      }
+    }
+
+    // Fallback: try to extract any 11-character alphanumeric string (YouTube video ID)
+    const match = url.match(/[a-zA-Z0-9_-]{11}/);
+    if (match && match[0].length === 11) {
+      return `https://www.youtube.com/embed/${match[0]}?autoplay=0&rel=0`;
+    }
+
+    console.warn("Could not extract YouTube video ID from URL:", url);
+    return null;
+  } catch (error) {
+    console.error("Error parsing YouTube URL:", error, "URL:", url);
+    return null;
   }
-  return null;
 }
 
 interface ContentDetailViewProps {

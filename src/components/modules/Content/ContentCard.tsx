@@ -4,7 +4,7 @@ import { IContent } from "@/types/content.types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, Star, Eye, Pencil, Trash2 } from "lucide-react";
+import { Play, Star, Eye, Pencil, Trash2, Film } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface ContentCardProps {
@@ -30,6 +30,11 @@ export function ContentCard({ content, showWatchButton = false, onEdit, onDelete
       onDelete(content.id);
     }
   };
+
+
+  // Determine if "Watch Now" should be shown (only for FREE content or when showWatchButton is true)
+  const showWatchNow = showWatchButton || content.accessType === "FREE";
+
   return (
     <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg">
       <CardHeader className="p-0">
@@ -47,12 +52,15 @@ export function ContentCard({ content, showWatchButton = false, onEdit, onDelete
             </div>
           )}
 
-          {/* Overlay with play button */}
-          <div className="absolute inset-0 bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-center justify-center">
-            {showWatchButton && (
-              <Button size="lg" className="rounded-full">
-                <Play className="h-6 w-6 mr-2" />
-                Watch Now
+          {/* Overlay with action buttons on hover */}
+          <div className="absolute inset-0 bg-black/70 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex flex-col items-center justify-center gap-3 p-4">
+            {/* Watch Now button (context-aware) */}
+            {showWatchNow && (
+              <Button asChild size="lg" className="rounded-full w-full max-w-[200px]">
+                <Link href={`/content/${content.id}/watch`}>
+                  <Play className="h-5 w-5 mr-2" />
+                  Watch Now
+                </Link>
               </Button>
             )}
           </div>
@@ -112,7 +120,7 @@ export function ContentCard({ content, showWatchButton = false, onEdit, onDelete
 
           {content.accessType === "TICKET" && (
             <Button asChild className="flex-1">
-              <Link href={`/dashboard/buy-ticket/${content.id}`}>
+              <Link href={`/dashboard/buy-ticket?contentId=${content.id}`}>
                 Buy Ticket
               </Link>
             </Button>
