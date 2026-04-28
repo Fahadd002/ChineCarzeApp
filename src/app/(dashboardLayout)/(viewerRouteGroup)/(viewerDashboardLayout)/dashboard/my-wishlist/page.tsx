@@ -1,17 +1,34 @@
-
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { getMyWatchlist } from "@/services/watchlist.services";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getMyWatchlist, removeFromWatchlist } from "@/services/watchlist.services";
 import { ContentGrid } from "@/components/modules/Content/ContentGrid";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 const MyWishlistPage = () => {
+  const queryClient = useQueryClient();
+
   const { data: watchlist, isLoading, error } = useQuery({
     queryKey: ["my-watchlist"],
     queryFn: getMyWatchlist,
   });
+
+  const removeMutation = useMutation({
+    mutationFn: removeFromWatchlist,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-watchlist"] });
+      toast.success("Removed from watchlist");
+    },
+    onError: () => {
+      toast.error("Failed to remove from watchlist");
+    },
+  });
+
+  const handleRemove = (contentId: string) => {
+    removeMutation.mutate(contentId);
+  };
 
   if (isLoading) {
     return (
@@ -55,7 +72,10 @@ const MyWishlistPage = () => {
         </CardHeader>
         <CardContent>
           {watchlist && watchlist.data && watchlist.data.length > 0 ? (
-            <ContentGrid contents={watchlist.data.map((item) => item.content as any)} />
+            <ContentGrid
+              contents={watchlist.data.map((item) => item.content)}
+              onDelete={handleRemove}
+            />
           ) : (
             <p className="text-muted-foreground">Your wishlist is empty.</p>
           )}

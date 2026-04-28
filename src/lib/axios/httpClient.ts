@@ -73,6 +73,16 @@ const createAxiosInstance = async (): Promise<AxiosInstance> => {
                 const originalRequest = error.config as any;
 
                 if (error.response?.status === 401 && !originalRequest._retry) {
+                    // Don't attempt token refresh for auth endpoints to avoid infinite loops
+                    const url = originalRequest.url || '';
+                    const isAuthRoute = url.includes('/auth/login') || 
+                                      url.includes('/auth/register') || 
+                                      url.includes('/auth/refresh-token') ||
+                                      url.includes('/auth/forget-password');
+                    if (isAuthRoute) {
+                        return Promise.reject(error);
+                    }
+
                     if (isRefreshing) {
                         return new Promise((resolve, reject) => {
                             failedQueue.push({ resolve, reject });

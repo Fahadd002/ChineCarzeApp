@@ -36,14 +36,28 @@ const BuyTicketPage = () => {
       // Create Stripe checkout session (also creates ticket)
       const sessionResponse = await createCheckoutSession(contentId);
       if (!sessionResponse.success || !sessionResponse.data?.url) {
-        throw new Error(sessionResponse.message || "Failed to create checkout session");
+        const message = sessionResponse.message || "Failed to create checkout session";
+        // Check if already purchased
+        if (message.includes("already purchased")) {
+          toast.info("You already have a ticket for this content");
+          router.push("/dashboard/my-tickets");
+          return;
+        }
+        throw new Error(message);
       }
 
       // Redirect to Stripe
       window.location.href = sessionResponse.data.url;
     } catch (error: any) {
       console.error("Payment error:", error);
-      toast.error(error?.message || "Failed to initiate payment");
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to initiate payment";
+
+      if (errorMessage.includes("already purchased")) {
+        toast.info("You already have a ticket for this content");
+        router.push("/dashboard/my-tickets");
+      } else {
+        toast.error(errorMessage);
+      }
       setIsPurchasing(false);
     }
   };

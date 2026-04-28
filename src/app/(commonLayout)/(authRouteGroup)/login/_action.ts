@@ -54,9 +54,18 @@ export const loginAction = async (payload: ILoginPayload, redirectPath?: string)
         if (error && error.response && error.response.data.message === "Email not verified") {
             redirect(`/verify-email?email=${payload.email}`);
         }
+
+        // Extract proper error message from API response
+        let errorMessage = "Login failed. Please try again.";
+        if (error?.response?.data?.message) {
+            errorMessage = error.response.data.message;
+        } else if (error?.message) {
+            errorMessage = error.message;
+        }
+
         return {
             success: false,
-            message: `Login failed: ${error.message}`,
+            message: errorMessage,
         }
     }
 }
