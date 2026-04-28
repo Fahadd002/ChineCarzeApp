@@ -50,6 +50,14 @@ export interface ICheckoutSessionPayload {
     plan?: SubscriptionPlan;
 }
 
+export interface ICheckoutSessionResponse {
+    url: string;
+    sessionId: string;
+    ticketId?: string;
+    subscriptionId?: string;
+    paymentId: string;
+}
+
 export interface ISubscription {
     id: string;
     plan: SubscriptionPlan;

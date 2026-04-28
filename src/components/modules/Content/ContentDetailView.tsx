@@ -3,15 +3,36 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { addToWatchlist } from "@/services/watchlist.services";
+import { getMyTickets } from "@/services/ticket.services";
+import { getMySubscriptions } from "@/services/subscription.services";
 import { IContent } from "@/types/content.types";
+import { ITicket } from "@/types/ticket.types";
+import { ISubscription } from "@/types/subscription.types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Play, Eye, Calendar, User, Tag, BookmarkPlus } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Play, Eye, Calendar, User, Tag, BookmarkPlus, CreditCard, Ticket } from "lucide-react";
 import { ReviewSection } from "./ReviewSection";
 import { toast } from "sonner";
+
+// Helper to convert YouTube URL to embed URL
+function getYouTubeEmbedUrl(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return `https://www.youtube.com/embed/${match[1]}?autoplay=0`;
+    }
+  }
+  return null;
+}
 
 interface ContentDetailViewProps {
   content: IContent;
@@ -20,6 +41,25 @@ interface ContentDetailViewProps {
 export function ContentDetailView({ content }: ContentDetailViewProps) {
   const [showTrailer, setShowTrailer] = useState(false);
   const queryClient = useQueryClient();
+
+  const needsSubscription = content.accessType === "SUBSCRIPTION" || content.accessType === "BOTH";
+  const needsTicket = content.accessType === "TICKET" || content.accessType === "BOTH";
+
+  // Check if viewer has active subscription
+  const { data: subscriptions, isLoading: loadingSubscriptions } = useQuery({
+    queryKey: ["my-subscriptions"],
+    queryFn: getMySubscriptions,
+    enabled: needsSubscription,
+    retry: false,
+  });
+
+  // Check if viewer has ticket for this content
+  const { data: tickets, isLoading: loadingTickets } = useQuery({
+    queryKey: ["my-tickets"],
+    queryFn: getMyTickets,
+    enabled: needsTicket,
+    retry: false,
+  });
 
   const { mutateAsync: addToWatchlistMutation, isPending: isAddingToWatchlist } = useMutation({
     mutationFn: (contentId: string) => addToWatchlist({ contentId }),
@@ -34,6 +74,103 @@ export function ContentDetailView({ content }: ContentDetailViewProps) {
 
   const handleAddToWatchlist = () => {
     addToWatchlistMutation(content.id);
+  };
+
+  // Check if user has access
+  const hasActiveSubscription = subscriptions?.data?.some(
+    (sub: ISubscription) => sub.status === "PAID" && new Date(sub.endDate) >= new Date()
+  );
+
+  const hasTicketForThisContent = tickets?.data?.some(
+    (ticket: ITicket) => ticket.contentId === content.id && ticket.paymentStatus === "PAID"
+  );
+
+  const isLoadingAccess = needsSubscription && loadingSubscriptions || needsTicket && loadingTickets;
+
+  const getWatchButton = () => {
+    if (isLoadingAccess) {
+      return <Skeleton className="h-12 w-48" />;
+    }
+
+    if (content.accessType === "FREE") {
+      return (
+        <Button asChild size="lg" className="flex items-center gap-2">
+          <Link href={`/content/${content.id}/watch`}>
+            <Play className="h-5 w-5" />
+            Watch Now
+          </Link>
+        </Button>
+      );
+    }
+
+    if (content.accessType === "TICKET") {
+      return hasTicketForThisContent ? (
+        <Button asChild size="lg" className="flex items-center gap-2">
+          <Link href={`/content/${content.id}/watch`}>
+            <Play className="h-5 w-5" />
+            Watch Now
+          </Link>
+        </Button>
+      ) : (
+        <Button asChild size="lg" className="flex items-center gap-2">
+          <Link href={`/dashboard/buy-ticket?contentId=${content.id}`}>
+            <Ticket className="h-5 w-5" />
+            Buy Ticket - ${content.ticketPrice}
+          </Link>
+        </Button>
+      );
+    }
+
+    if (content.accessType === "SUBSCRIPTION") {
+      return hasActiveSubscription ? (
+        <Button asChild size="lg" className="flex items-center gap-2">
+          <Link href={`/content/${content.id}/watch`}>
+            <Play className="h-5 w-5" />
+            Watch Now
+          </Link>
+        </Button>
+      ) : (
+        <Button asChild size="lg" className="flex items-center gap-2">
+          <Link href="/payment/checkout">
+            <CreditCard className="h-5 w-5" />
+            Subscribe to Watch
+          </Link>
+        </Button>
+      );
+    }
+
+    if (content.accessType === "BOTH") {
+      if (hasActiveSubscription || hasTicketForThisContent) {
+        return (
+          <Button asChild size="lg" className="flex items-center gap-2">
+            <Link href={`/content/${content.id}/watch`}>
+              <Play className="h-5 w-5" />
+              Watch Now
+            </Link>
+          </Button>
+        );
+      }
+
+      // No access - show both options
+      return (
+        <div className="flex gap-3">
+          <Button asChild size="lg" className="flex items-center gap-2">
+            <Link href={`/dashboard/buy-ticket?contentId=${content.id}`}>
+              <Ticket className="h-5 w-5" />
+              Buy Ticket - ${content.ticketPrice}
+            </Link>
+          </Button>
+          <Button asChild size="lg" variant="outline" className="flex items-center gap-2">
+            <Link href="/payment/checkout">
+              <CreditCard className="h-5 w-5" />
+              Subscribe
+            </Link>
+          </Button>
+        </div>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -119,44 +256,7 @@ export function ContentDetailView({ content }: ContentDetailViewProps) {
 
             {/* Action Buttons */}
             <div className="flex gap-4 pt-4">
-              {content.accessType === "FREE" && (
-                <Button asChild size="lg" className="flex items-center gap-2">
-                  <Link href={`/content/${content.id}/watch`}>
-                    <Play className="h-5 w-5" />
-                    Watch Now
-                  </Link>
-                </Button>
-              )}
-
-              {content.accessType === "TICKET" && (
-                <Button asChild size="lg" className="flex items-center gap-2">
-                  <Link href={`/dashboard/buy-ticket/${content.id}`}>
-                    <Play className="h-5 w-5" />
-                    Buy Ticket - ${content.ticketPrice}
-                  </Link>
-                </Button>
-              )}
-
-              {content.accessType === "SUBSCRIPTION" && (
-                <Button asChild size="lg" className="flex items-center gap-2">
-                  <Link href={`/content/${content.id}/watch`}>
-                    <Play className="h-5 w-5" />
-                    Watch with Subscription
-                  </Link>
-                </Button>
-              )}
-
-              {content.trailerUrl && (
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => setShowTrailer(!showTrailer)}
-                  className="flex items-center gap-2"
-                >
-                  <Play className="h-5 w-5" />
-                  {showTrailer ? "Hide" : "Show"} Trailer
-                </Button>
-              )}
+              {getWatchButton()}
 
               <Button
                 variant="outline"
@@ -181,11 +281,26 @@ export function ContentDetailView({ content }: ContentDetailViewProps) {
             </CardHeader>
             <CardContent>
               <div className="aspect-video">
-                <video
-                  src={content.trailerUrl}
-                  controls
-                  className="h-full w-full rounded-lg"
-                />
+                {(() => {
+                  const embedUrl = getYouTubeEmbedUrl(content.trailerUrl);
+                  if (embedUrl) {
+                    return (
+                      <iframe
+                        src={embedUrl}
+                        className="h-full w-full rounded-lg"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    );
+                  }
+                  return (
+                    <video
+                      src={content.trailerUrl}
+                      controls
+                      className="h-full w-full rounded-lg"
+                    />
+                  );
+                })()}
               </div>
             </CardContent>
           </Card>

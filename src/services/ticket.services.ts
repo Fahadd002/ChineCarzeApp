@@ -1,5 +1,6 @@
 import { ApiResponse } from "@/types/api.type";
 import { ITicket } from "@/types/ticket.types";
+import { ICheckoutSessionResponse } from "@/types/payment.types";
 import { httpClient } from "@/lib/axios/httpClient";
 
 export async function getMyTickets(): Promise<ApiResponse<ITicket[]>> {
@@ -12,6 +13,6 @@ export async function purchaseTicket(payload: {
     return httpClient.post<ITicket>("/tickets", payload);
 }
 
-export async function createCheckoutSession(contentId: string): Promise<ApiResponse<{ url: string }>> {
-    return httpClient.post<{ url: string }>("/payments/checkout", { contentId });
+export async function createCheckoutSession(contentId: string): Promise<ApiResponse<ICheckoutSessionResponse>> {
+    return httpClient.post<ICheckoutSessionResponse>("/payments/checkout", { type: "TICKET", contentId });
 }

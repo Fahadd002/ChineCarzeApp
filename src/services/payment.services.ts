@@ -1,9 +1,9 @@
 import { ApiResponse } from "@/types/api.type";
-import { ICheckoutSessionPayload, IPayment, ISubscription } from "@/types/payment.types";
+import { ICheckoutSessionPayload, ICheckoutSessionResponse, IPayment, ISubscription } from "@/types/payment.types";
 import { httpClient } from "@/lib/axios/httpClient";
 
-export async function createCheckoutSession(payload: ICheckoutSessionPayload): Promise<ApiResponse<{ url: string }>> {
-    return httpClient.post<{ url: string }>("/payments/checkout", payload);
+export async function createCheckoutSession(payload: ICheckoutSessionPayload): Promise<ApiResponse<ICheckoutSessionResponse>> {
+    return httpClient.post<ICheckoutSessionResponse>("/payments/checkout", payload);
 }
 
 export async function getPaymentStatus(paymentId: string): Promise<ApiResponse<IPayment>> {
