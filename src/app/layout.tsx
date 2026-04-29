@@ -1,9 +1,7 @@
-import QueryProviders from "@/providers/QueryProvider";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "sonner";
-import PublicNavbar from "@/components/modules/Public/PublicNavbar";
+import RootLayoutWrapper from "@/components/RootLayoutWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,15 +23,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const className = `${geistSans.variable} ${geistMono.variable} antialiased`;
+  
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-      <body>
-         <QueryProviders>
-           <PublicNavbar />
-          {children}
-          <Toaster position="top-right" richColors />
-        </QueryProviders>
-      </body>
-    </html>
+    <RootLayoutWrapper className={className}>
+      {children}
+    </RootLayoutWrapper>
   );
 }

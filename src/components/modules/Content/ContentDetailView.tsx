@@ -13,10 +13,26 @@ import { ISubscription } from "@/types/subscription.types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Play, Eye, Calendar, User, Tag, BookmarkPlus, CreditCard, Ticket } from "lucide-react";
+import { ShimmerSkeleton } from "@/components/ui/motion";
+import { motion } from "framer-motion";
+import {
+  Play,
+  Eye,
+  Calendar,
+  User,
+  Tag,
+  BookmarkPlus,
+  CreditCard,
+  Ticket,
+  Sparkles,
+  Star,
+  Film
+} from "lucide-react";
 import { ReviewSection } from "./ReviewSection";
 import { toast } from "sonner";
+import { AnimatedButton } from "@/components/ui/motion";
+import { FloatingOrb } from "@/components/ui/motion";
+import { cn } from "@/lib/utils";
 
 // Helper to convert YouTube URL to embed URL
 function getYouTubeEmbedUrl(url: string): string | null {
@@ -114,9 +130,14 @@ export function ContentDetailView({ content }: ContentDetailViewProps) {
 
   const isLoadingAccess = needsSubscription && loadingSubscriptions || needsTicket && loadingTickets;
 
+  // Compute average rating from reviews if available
+  const averageRating = content.reviews && content.reviews.length > 0
+    ? content.reviews.reduce((sum, review) => sum + review.rating, 0) / content.reviews.length
+    : 0;
+
   const getWatchButton = () => {
     if (isLoadingAccess) {
-      return <Skeleton className="h-12 w-48" />;
+      return <ShimmerSkeleton className="h-12 w-48" />;
     }
 
     if (content.accessType === "FREE") {
@@ -201,141 +222,286 @@ export function ContentDetailView({ content }: ContentDetailViewProps) {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Hero Section */}
-      <div className="relative mb-8 overflow-hidden rounded-lg bg-gradient-to-r from-background to-muted">
-        <div className="flex flex-col gap-6 p-8 md:flex-row md:items-center">
-          {/* Poster */}
-          <div className="relative h-96 w-64 flex-shrink-0 overflow-hidden rounded-lg shadow-lg">
-            {content.posterUrl ? (
-              <Image
-                src={content.posterUrl}
-                alt={content.title}
-                fill
-                className="object-cover"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center bg-muted">
-                <span className="text-muted-foreground">No Image</span>
-              </div>
-            )}
+    <div className="min-h-screen">
+      {/* Cinematic Hero Header */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+        className="relative h-[50vh] min-h-[400px] overflow-hidden"
+      >
+        {/* Background image with parallax - use poster as banner fallback */}
+        {content.posterUrl ? (
+          <div className="absolute inset-0">
+            <Image
+              src={content.posterUrl}
+              alt={content.title}
+              fill
+              priority
+              className="object-cover"
+              sizes="100vw"
+            />
+            {/* Gradient overlays */}
+            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-950/70 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
           </div>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-red-950/30 via-purple-950/20 to-zinc-950/60" />
+        )}
 
-          {/* Content Info */}
-          <div className="flex-1 space-y-4">
-            <div>
-              <h1 className="text-4xl font-bold">{content.title}</h1>
-              <div className="mt-2 flex flex-wrap items-center gap-4 text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>{content.releaseYear}</span>
+        {/* Floating orbs/particles when no image */}
+        {!content.posterUrl && (
+          <>
+            <FloatingOrb color="red" size="md" className="top-10 right-10 opacity-20" />
+            <FloatingOrb color="purple" size="lg" className="bottom-10 left-10 opacity-20" />
+            <FloatingOrb color="blue" size="sm" className="top-1/2 left-1/2 opacity-10" />
+          </>
+        )}
+
+        {/* Content */}
+        <div className="relative container mx-auto px-4 h-full flex items-end pb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="flex flex-col gap-6 md:flex-row md:items-end"
+          >
+            {/* Movie Poster with hover effect */}
+            <motion.div
+              whileHover={{ scale: 1.05, rotate: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="relative h-72 w-48 md:h-80 md:w-56 flex-shrink-0 overflow-hidden rounded-2xl shadow-2xl ring-2 ring-white/10"
+            >
+              {content.posterUrl ? (
+                <Image
+                  src={content.posterUrl}
+                  alt={content.title}
+                  fill
+                  priority
+                  className="object-cover"
+                  sizes="(max-width: 768px) 50vw, 30vw"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center bg-muted">
+                  <Film className="h-12 w-12 text-muted-foreground/50" />
                 </div>
-                <div className="flex items-center gap-1">
-                  <Eye className="h-4 w-4" />
-                  <span>{content.views} views</span>
-                </div>
-                <Badge variant="outline">
-                  {content.mediaType.replace("_", " ")}
-                </Badge>
-                <Badge variant={content.accessType === "FREE" ? "secondary" : "default"}>
+              )}
+
+              {/* Access badge on poster */}
+              <div className="absolute top-2 right-2">
+                <Badge
+                  className={cn(
+                    "backdrop-blur-sm border-0 text-xs font-semibold",
+                    content.accessType === "FREE" ? "bg-emerald-500/90" :
+                    content.accessType === "SUBSCRIPTION" ? "bg-blue-500/90" :
+                    content.accessType === "TICKET" ? "bg-rose-500/90" : "bg-purple-500/90"
+                  )}
+                >
                   {content.accessType}
                 </Badge>
               </div>
-            </div>
+            </motion.div>
 
-            {content.description && (
-              <p className="text-lg leading-relaxed">{content.description}</p>
-            )}
+            {/* Content Info */}
+            <div className="flex-1 space-y-4">
+              {/* Title with gradient */}
+              <div>
+                <motion.h1
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-4xl md:text-5xl font-bold leading-tight bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent"
+                >
+                  {content.title}
+                </motion.h1>
 
-            {/* Cast & Director */}
-            <div className="space-y-2">
-              {content.director && (
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  <span className="font-medium">Director:</span>
-                  <span>{content.director}</span>
-                </div>
+                {/* Meta info */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="mt-3 flex flex-wrap items-center gap-4 text-sm text-gray-300"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    {content.releaseYear}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                    {(content.views || 0).toLocaleString()} views
+                  </span>
+                  {averageRating > 0 && (
+                    <span className="flex items-center gap-1.5">
+                      <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+                      <span className="font-medium text-amber-400">{averageRating.toFixed(1)}</span>
+                    </span>
+                  )}
+                  <Badge variant="outline" className="text-xs">
+                    {content.mediaType.replace("_", " ")}
+                  </Badge>
+                  <Badge
+                    variant="default"
+                    className={cn(
+                      "text-xs font-semibold border-0",
+                      content.accessType === "FREE" ? "bg-emerald-500" :
+                      content.accessType === "SUBSCRIPTION" ? "bg-blue-500" :
+                      content.accessType === "TICKET" ? "bg-rose-500" : "bg-purple-500"
+                    )}
+                  >
+                    {content.accessType}
+                  </Badge>
+                </motion.div>
+              </div>
+
+              {/* Description */}
+              {content.description && (
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  className="max-w-2xl text-gray-300 leading-relaxed line-clamp-3"
+                >
+                  {content.description}
+                </motion.p>
               )}
 
-              {content.cast.length > 0 && (
-                <div className="flex items-start gap-2">
-                  <User className="h-4 w-4 mt-0.5" />
-                  <span className="font-medium">Cast:</span>
-                  <span>{content.cast.join(", ")}</span>
-                </div>
-              )}
-            </div>
+              {/* Meta details */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7 }}
+                className="flex flex-wrap gap-4 text-sm"
+              >
+                {/* Director */}
+                {content.director && (
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Director:</span>
+                    <span className="font-medium text-foreground">{content.director}</span>
+                  </div>
+                )}
 
-            {/* Genres */}
-            {content.genres.length > 0 && (
-              <div className="flex items-start gap-2">
-                <Tag className="h-4 w-4 mt-0.5" />
-                <span className="font-medium">Genres:</span>
-                <div className="flex flex-wrap gap-1">
+                {/* Cast */}
+                {content.cast.length > 0 && (
+                  <div className="flex items-start gap-2">
+                    <User className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <span className="text-muted-foreground">Cast:</span>
+                    <span className="text-foreground">{content.cast.slice(0, 5).join(", ")}{content.cast.length > 5 ? "..." : ""}</span>
+                  </div>
+                )}
+              </motion.div>
+
+              {/* Genres */}
+              {content.genres.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 }}
+                  className="flex flex-wrap gap-2"
+                >
+                  <Tag className="h-4 w-4 text-muted-foreground mt-1" />
                   {content.genres.map((genre) => (
-                    <Badge key={genre} variant="outline">
+                    <Badge
+                      key={genre}
+                      variant="outline"
+                      className="border-white/10 bg-zinc-950/30 hover:bg-zinc-900/50 transition-colors"
+                    >
                       {genre}
                     </Badge>
                   ))}
-                </div>
-              </div>
-            )}
+                </motion.div>
+              )}
 
-            {/* Action Buttons */}
-            <div className="flex gap-4 pt-4">
-              {getWatchButton()}
-
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={handleAddToWatchlist}
-                disabled={isAddingToWatchlist}
+              {/* Action Buttons */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 }}
+                className="flex flex-wrap gap-4 pt-4"
               >
-                <BookmarkPlus className="h-5 w-5 mr-2" />
-                {isAddingToWatchlist ? "Adding..." : "Add to Watchlist"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+                {/* Primary Watch Button */}
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-purple-600 rounded-lg blur opacity-60 group-hover:opacity-100 transition duration-500" />
+                  {getWatchButton()}
+                </div>
 
-      {/* Trailer */}
-      {showTrailer && content.trailerUrl && (
-        <div className="mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Trailer</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="aspect-video">
-                {(() => {
-                  const embedUrl = getYouTubeEmbedUrl(content.trailerUrl);
-                  if (embedUrl) {
+                {/* Add to Watchlist */}
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleAddToWatchlist}
+                  disabled={isAddingToWatchlist}
+                  className="gap-2 border-white/10 bg-zinc-950/50 hover:bg-zinc-900 hover:border-white/20"
+                >
+                  <BookmarkPlus className="h-5 w-5" />
+                  {isAddingToWatchlist ? "Adding..." : "Add to Watchlist"}
+                </Button>
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Bottom gradient fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background via-background/60 to-transparent pointer-events-none" />
+      </motion.div>
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 pb-12">
+        {/* Trailer Section */}
+        {showTrailer && content.trailerUrl && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mb-12"
+          >
+            <Card className="overflow-hidden border-0 bg-gradient-to-b from-zinc-900/50 to-transparent shadow-2xl">
+              <CardHeader className="border-b border-white/5">
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-red-500" />
+                  <span className="bg-gradient-to-r from-red-400 to-purple-400 bg-clip-text text-transparent">
+                    Official Trailer
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="aspect-video relative bg-black">
+                  {(() => {
+                    const embedUrl = getYouTubeEmbedUrl(content.trailerUrl);
+                    if (embedUrl) {
+                      return (
+                        <iframe
+                          src={embedUrl}
+                          className="h-full w-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          title={`${content.title} Trailer`}
+                        />
+                      );
+                    }
                     return (
-                      <iframe
-                        src={embedUrl}
-                        className="h-full w-full rounded-lg"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
+                      <video
+                        src={content.trailerUrl}
+                        controls
+                        className="h-full w-full"
                       />
                     );
-                  }
-                  return (
-                    <video
-                      src={content.trailerUrl}
-                      controls
-                      className="h-full w-full rounded-lg"
-                    />
-                  );
-                })()}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
-      {/* Reviews Section */}
-      <ReviewSection contentId={content.id} />
+        {/* Reviews Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <ReviewSection contentId={content.id} />
+        </motion.div>
+      </div>
     </div>
   );
 }
