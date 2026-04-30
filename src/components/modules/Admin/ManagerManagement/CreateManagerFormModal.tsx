@@ -150,6 +150,7 @@ const CreateManagerFormModal = () => {
             </form>
           </div>
         </ScrollArea>
+        </motion.div>
       </DialogContent>
     </Dialog>
   )

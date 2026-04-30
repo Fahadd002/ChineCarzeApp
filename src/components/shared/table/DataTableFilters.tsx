@@ -491,17 +491,16 @@ const DataTableFilters = ({
           </motion.div>
         )}
 
-          <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
-            <Filter className="h-3.5 w-3.5 text-red-400" />
-            <motion.span
-              key={totalActiveFilters}
-              initial={{ scale: 1.2 }}
-              animate={{ scale: 1 }}
-              className="font-mono min-w-[1ch]"
-            >
-              {totalActiveFilters}
-            </motion.span>
-          </div>
+        <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+          <Filter className="h-3.5 w-3.5 text-red-400" />
+          <motion.span
+            key={totalActiveFilters}
+            initial={{ scale: 1.2 }}
+            animate={{ scale: 1 }}
+            className="font-mono min-w-[1ch]"
+          >
+            {totalActiveFilters}
+          </motion.span>
         </div>
 
         {/* Active filter badges */}
