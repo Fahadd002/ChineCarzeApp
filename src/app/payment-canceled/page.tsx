@@ -4,8 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { XCircle } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth";
+import { getDefaultDashboardRoute, UserRole } from "@/lib/authUtils";
 
 const PaymentCanceledPage = () => {
+  const { session, loading } = useAuth();
+
+  // Determine the correct dashboard route based on user role
+  const dashboardRoute = !loading && session?.user?.role
+    ? getDefaultDashboardRoute(session.user.role as UserRole)
+    : "/dashboard";
+
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
       <Card className="w-full max-w-md">
@@ -22,7 +31,7 @@ const PaymentCanceledPage = () => {
           </div>
           <div className="flex flex-col gap-2">
             <Button asChild>
-              <Link href="/dashboard">
+              <Link href={dashboardRoute}>
                 Return to Dashboard
               </Link>
             </Button>

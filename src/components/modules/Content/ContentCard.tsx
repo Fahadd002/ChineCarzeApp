@@ -1,31 +1,40 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { IContent } from "@/types/content.types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Play, Star, Eye, Pencil, Trash2, Film, Calendar } from "lucide-react";
+import { Play, Star, Eye, Pencil, Trash2, Film, Calendar, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { createCheckoutSession } from "@/services/ticket.services";
+import { toast } from "sonner";
 
 interface ContentCardProps {
   content: IContent;
   showWatchButton?: boolean;
+  hasAccess?: boolean;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
-  index?: number; // Index for staggered animation
+  index?: number;
+  onTicketPurchase?: () => void; // Callback to refresh parent data after purchase
 }
 
 export function ContentCard({
   content,
   showWatchButton = false,
+  hasAccess = false,
   onEdit,
   onDelete,
   index = 0,
+  onTicketPurchase,
 }: ContentCardProps) {
   const router = useRouter();
+  const [isPurchasingTicket, setIsPurchasingTicket] = useState(false);
 
   const handleEdit = () => {
     if (onEdit) {
@@ -41,10 +50,67 @@ export function ContentCard({
     }
   };
 
-  // Determine if "Watch Now" should be shown (only for FREE content or when showWatchButton is true)
-  const showWatchNow = showWatchButton || content.accessType === "FREE";
+  const handleBuyTicket = async () => {
+    setIsPurchasingTicket(true);
+    try {
+      const sessionResponse = await createCheckoutSession(content.id);
+      
+      if (!sessionResponse.success) {
+        const message = sessionResponse.message || "Failed to create checkout session";
+        
+        // Check if already purchased
+        if (message.toLowerCase().includes("already purchased") || 
+            message.toLowerCase().includes("already have a ticket")) {
+          toast.info("You already have a ticket for this content");
+          onTicketPurchase?.(); // Refresh parent data
+          return;
+        }
+        
+        throw new Error(message);
+      }
+      
+      // Check if we have the redirect URL
+      if (!sessionResponse.data?.url) {
+        throw new Error("No checkout URL received from server");
+      }
+      
+      // Redirect to Stripe checkout
+      window.location.href = sessionResponse.data.url;
+      
+    } catch (error: any) {
+      console.error("Payment error:", error);
+      
+      let errorMessage = "Failed to initiate payment. Please try again.";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      // Check for "already purchased" in error message
+      if (errorMessage.toLowerCase().includes("already purchased") || 
+          errorMessage.toLowerCase().includes("already have a ticket")) {
+        toast.info("You already have a ticket for this content");
+        onTicketPurchase?.(); // Refresh parent data
+      } else {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setIsPurchasingTicket(false);
+    }
+  };
 
-  // Access type glow colors
+  // Improved watch button logic
+  const showWatchNow = showWatchButton || 
+    content.accessType === "FREE" || 
+    (hasAccess && (content.accessType === "SUBSCRIPTION" || content.accessType === "TICKET" || content.accessType === "BOTH"));
+
+   // Show ticket button only for TICKET or BOTH without access
+   const showTicketButton = (content.accessType === "TICKET" || content.accessType === "BOTH") && !hasAccess;
+
   const glowColor =
     content.accessType === "FREE"
       ? "green"
@@ -52,10 +118,12 @@ export function ContentCard({
       ? "blue"
       : "red";
 
-  // Compute average rating from reviews if available
   const averageRating = content.reviews && content.reviews.length > 0
     ? content.reviews.reduce((sum, review) => sum + review.rating, 0) / content.reviews.length
     : 0;
+
+  // Format ticket price for display
+  const ticketPrice = content.ticketPrice ?? 0;
 
   return (
     <motion.div
@@ -72,7 +140,6 @@ export function ContentCard({
       }}
       className="group relative overflow-hidden rounded-2xl bg-gradient-to-b from-zinc-900/95 to-zinc-900/80 backdrop-blur-sm border border-white/5 shadow-card transition-all duration-500 hover:shadow-elevated hover:border-white/10"
     >
-      {/* Ambient glow effect on hover */}
       <motion.div
         className={cn(
           "absolute inset-0 opacity-0 group-hover:opacity-40 transition-opacity duration-500 pointer-events-none blur-2xl",
@@ -91,14 +158,13 @@ export function ContentCard({
         }}
       />
 
-      {/* Focus ring for accessibility */}
       <motion.div
-        className="absolute inset-0 rounded-2xl ring-2 ring-primary/0 opacity-0 z-20"
+        className="absolute inset-0 rounded-2xl ring-2 ring-primary/0 opacity-0 z-20 pointer-events-none"
         whileHover={{ opacity: 0.2 }}
         transition={{ duration: 0.2 }}
       />
 
-      {/* Poster Image with Parallax */}
+      {/* Poster Section */}
       <div className="relative aspect-[2/3] overflow-hidden">
         {content.posterUrl ? (
           <motion.div
@@ -120,11 +186,10 @@ export function ContentCard({
           </div>
         )}
 
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-80 group-hover:opacity-60 transition-opacity duration-500" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-80 group-hover:opacity-60 transition-opacity duration-500 pointer-events-none" />
 
         {/* Media type badge */}
-        <div className="absolute top-2 right-2">
+        <div className="absolute top-2 right-2 z-10">
           <Badge
             variant="outline"
             className="bg-black/70 text-white border-white/20 backdrop-blur-sm text-xs"
@@ -133,9 +198,9 @@ export function ContentCard({
           </Badge>
         </div>
 
-        {/* Rating badge (if available through reviews) */}
+        {/* Rating badge */}
         {averageRating > 0 && (
-          <div className="absolute bottom-2 left-2">
+          <div className="absolute bottom-2 left-2 z-10">
             <Badge
               variant="default"
               className="bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white flex items-center gap-1 backdrop-blur-sm"
@@ -146,8 +211,8 @@ export function ContentCard({
           </div>
         )}
 
-        {/* Access type indicator with glow */}
-        <div className="absolute bottom-2 right-2">
+        {/* Access type indicator */}
+        <div className="absolute bottom-2 right-2 z-10">
           <motion.div
             whileHover={{ scale: 1.1 }}
             transition={{ type: "spring", stiffness: 400, damping: 10 }}
@@ -173,15 +238,15 @@ export function ContentCard({
           </motion.div>
         </div>
 
-        {/* Play button overlay (center) */}
+        {/* Play button overlay with pointer-events-none */}
         <motion.div
-          className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
           initial={false}
         >
           <motion.div
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            className="relative"
+            className="relative pointer-events-auto"
           >
             <div className="absolute inset-0 bg-primary/30 rounded-full blur-xl" />
             <Button
@@ -197,31 +262,28 @@ export function ContentCard({
         </motion.div>
       </div>
 
-        {/* Content Info */}
-        <div className="relative p-4 space-y-3">
-          {/* Title */}
-          <motion.h3
-            className="line-clamp-2 text-lg font-semibold leading-tight text-foreground group-hover:text-primary/90 transition-colors"
-            whileHover={{ x: 2 }}
-            transition={{ duration: 0.2 }}
-          >
-            {content.title}
-          </motion.h3>
+      {/* Content Info */}
+      <div className="relative p-4 space-y-3">
+        <motion.h3
+          className="line-clamp-2 text-lg font-semibold leading-tight text-foreground group-hover:text-primary/90 transition-colors"
+          whileHover={{ x: 2 }}
+          transition={{ duration: 0.2 }}
+        >
+          {content.title}
+        </motion.h3>
 
-          {/* Meta info */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              {content.releaseYear}
-            </span>
-            <span>•</span>
-            <span className="flex items-center gap-1">
-              <Eye className="h-3 w-3" />
-              {(content.views || 0).toLocaleString()}
-            </span>
-          </div>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            {content.releaseYear}
+          </span>
+          <span>•</span>
+          <span className="flex items-center gap-1">
+            <Eye className="h-3 w-3" />
+            {(content.views || 0).toLocaleString()}
+          </span>
+        </div>
 
-        {/* Genres */}
         {content.genres.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {content.genres.slice(0, 3).map((genre) => (
@@ -241,7 +303,6 @@ export function ContentCard({
           </div>
         )}
 
-        {/* Description (truncated) */}
         {content.description && (
           <motion.p
             className="line-clamp-2 text-xs text-muted-foreground leading-relaxed"
@@ -281,19 +342,24 @@ export function ContentCard({
           )}
         </div>
 
-        {content.accessType === "TICKET" && (
+        {showTicketButton && (
           <Button
-            asChild
+            onClick={handleBuyTicket}
+            disabled={isPurchasingTicket}
             size="sm"
             className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 border-0 shadow-lg"
           >
-            <Link href={`/dashboard/buy-ticket?contentId=${content.id}`}>
-              Buy Ticket
-            </Link>
+            {isPurchasingTicket ? (
+              <>
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>Buy Ticket {ticketPrice > 0 && `- $${ticketPrice.toFixed(2)}`}</>
+            )}
           </Button>
         )}
 
-        {/* Admin/Content Manager actions */}
         {(onEdit || onDelete) && (
           <div className="flex w-full gap-2 pt-2 border-t border-white/5 mt-2">
             <Button
@@ -318,7 +384,6 @@ export function ContentCard({
         )}
       </motion.div>
 
-      {/* Premium gradient border accent */}
       <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500">
         <div className="absolute inset-0 rounded-2xl border-2 border-transparent bg-gradient-to-br from-red-500/0 via-purple-500/0 to-blue-500/0 group-hover:from-red-500/20 group-hover:via-purple-500/20 group-hover:to-blue-500/20 transition-all duration-500" />
       </div>

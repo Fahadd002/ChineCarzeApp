@@ -7,12 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth";
+import { getDefaultDashboardRoute, UserRole } from "@/lib/authUtils";
 
 const PaymentSuccessPage = () => {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
   const [verifying, setVerifying] = useState(true);
   const [success, setSuccess] = useState(false);
+  const { session, loading } = useAuth();
 
   useEffect(() => {
     if (sessionId) {
@@ -24,6 +27,11 @@ const PaymentSuccessPage = () => {
       setVerifying(false);
     }
   }, [sessionId]);
+
+  // Determine the correct dashboard route based on user role
+  const dashboardRoute = !loading && session?.user?.role
+    ? getDefaultDashboardRoute(session.user.role as UserRole)
+    : "/dashboard";
 
   if (verifying) {
     return (
@@ -47,7 +55,7 @@ const PaymentSuccessPage = () => {
             <XCircle className="h-16 w-16 mx-auto text-destructive" />
             <p>We could not verify your payment. Please try again.</p>
             <Button asChild>
-              <Link href="/dashboard">Return to Dashboard</Link>
+              <Link href={dashboardRoute}>Return to Dashboard</Link>
             </Button>
           </CardContent>
         </Card>
@@ -71,12 +79,12 @@ const PaymentSuccessPage = () => {
           </div>
           <div className="flex flex-col gap-2">
             <Button asChild>
-              <Link href="/dashboard/my-tickets">
+              <Link href={`${dashboardRoute === "/dashboard" ? "/dashboard/my-tickets" : dashboardRoute}`}>
                 View My Tickets
               </Link>
             </Button>
             <Button asChild variant="outline">
-              <Link href="/dashboard">
+              <Link href={dashboardRoute}>
                 Return to Dashboard
               </Link>
             </Button>

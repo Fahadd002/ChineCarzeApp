@@ -1,16 +1,18 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { getWatchableContent, getContentById } from "@/services/content.services";
-import { Card } from "@/components/ui/card";
+import { createCheckoutSession } from "@/services/ticket.services";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShimmerSkeleton } from "@/components/ui/motion";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, ArrowLeft, Ticket, CreditCard, X, Play, Maximize2, Volume2, Film } from "lucide-react";
+import { AlertCircle, ArrowLeft, Ticket, CreditCard, Play, Film, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useState } from "react";
+import { toast } from "sonner";
 
 // Helper to convert YouTube URL to embed URL
 function getYouTubeEmbedUrl(url: string): string | null {
@@ -53,20 +55,77 @@ function getYouTubeEmbedUrl(url: string): string | null {
 const WatchPage = () => {
   const params = useParams();
   const contentId = params.id as string;
-  const [showControls, setShowControls] = useState(true);
+  const [showControls] = useState(true);
+  const [isPurchasingTicket, setIsPurchasingTicket] = useState(false);
 
-  const { data: content, isLoading, error } = useQuery({
+  const { data: content, isLoading, error, refetch } = useQuery({
     queryKey: ["content", contentId, "watch"],
     queryFn: () => getWatchableContent(contentId),
     enabled: !!contentId,
     retry: false,
   });
 
-  const { data: basicContent } = useQuery({
+  const { data: basicContent, refetch: refetchBasicContent } = useQuery({
     queryKey: ["content", contentId],
     queryFn: () => getContentById(contentId),
     enabled: !!contentId,
   });
+
+  const handleBuyTicket = async () => {
+    setIsPurchasingTicket(true);
+    try {
+      const sessionResponse = await createCheckoutSession(contentId);
+      
+      if (!sessionResponse.success) {
+        const message = sessionResponse.message || "Failed to create checkout session";
+        
+        // Check if already purchased
+        if (message.toLowerCase().includes("already purchased") || 
+            message.toLowerCase().includes("already have a ticket")) {
+          toast.info("You already have a ticket for this content");
+          // Refetch to update access status
+          await refetch();
+          await refetchBasicContent();
+          return;
+        }
+        
+        throw new Error(message);
+      }
+      
+      // Check if we have the redirect URL
+      if (!sessionResponse.data?.url) {
+        throw new Error("No checkout URL received from server");
+      }
+      
+      // Redirect to Stripe checkout
+      window.location.href = sessionResponse.data.url;
+      
+    } catch (error: any) {
+      console.error("Payment error:", error);
+      
+      let errorMessage = "Failed to initiate payment. Please try again.";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      // Check for "already purchased" in error message
+      if (errorMessage.toLowerCase().includes("already purchased") || 
+          errorMessage.toLowerCase().includes("already have a ticket")) {
+        toast.info("You already have a ticket for this content");
+        await refetch();
+        await refetchBasicContent();
+      } else {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setIsPurchasingTicket(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -178,7 +237,7 @@ const WatchPage = () => {
                   <div className="mt-6 space-y-3">
                     <h3 className="text-lg font-semibold">Get Access</h3>
 
-                    {basicData.accessType === "TICKET" && (
+                    {(basicData.accessType === "TICKET" || basicData.accessType === "BOTH") && (
                       <motion.div
                         whileHover={{ scale: 1.02 }}
                         className="p-4 border border-rose-500/30 bg-rose-950/20 rounded-xl"
@@ -186,16 +245,29 @@ const WatchPage = () => {
                         <div className="flex items-center gap-3 mb-2">
                           <Ticket className="h-5 w-5 text-rose-400" />
                           <span className="font-medium">Buy a Ticket</span>
-                          <span className="ml-auto font-bold text-rose-400">${basicData.ticketPrice?.toFixed(2)}</span>
+                          <span className="ml-auto font-bold text-rose-400">
+                            ${basicData.ticketPrice?.toFixed(2) || "0.00"}
+                          </span>
                         </div>
                         <p className="text-sm text-gray-300 mb-3">
                           One-time purchase to watch this content unlimited times.
                         </p>
-                        <Button asChild className="w-full bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 border-0 shadow-lg shadow-rose-500/30">
-                          <Link href={`/dashboard/buy-ticket?contentId=${basicData.id}`}>
-                            <CreditCard className="h-4 w-4 mr-2" />
-                            Purchase Ticket
-                          </Link>
+                        <Button 
+                          onClick={handleBuyTicket}
+                          disabled={isPurchasingTicket}
+                          className="w-full bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 border-0 shadow-lg shadow-rose-500/30"
+                        >
+                          {isPurchasingTicket ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <CreditCard className="h-4 w-4 mr-2" />
+                              Purchase Ticket
+                            </>
+                          )}
                         </Button>
                       </motion.div>
                     )}
@@ -336,7 +408,7 @@ const WatchPage = () => {
               <span>•</span>
               <span>{(basicData?.views || 0).toLocaleString()} views</span>
               <span>•</span>
-              <span>{basicData?.mediaType.replace("_", " ")}</span>
+              <span>{basicData?.mediaType?.replace("_", " ")}</span>
             </div>
 
             {basicData?.description && (
@@ -357,17 +429,27 @@ const WatchPage = () => {
                 </Link>
               </Button>
 
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-white/10 bg-zinc-950/50 hover:bg-zinc-900"
-              >
-                <Link href={`/dashboard/buy-ticket?contentId=${contentId}`}>
-                  <Ticket className="h-4 w-4 mr-2" />
-                  Buy Ticket
-                </Link>
-              </Button>
+              {(basicData?.accessType === "TICKET" || basicData?.accessType === "BOTH") && (
+                <Button
+                  onClick={handleBuyTicket}
+                  disabled={isPurchasingTicket}
+                  size="lg"
+                  variant="outline"
+                  className="border-white/10 bg-zinc-950/50 hover:bg-zinc-900"
+                >
+                  {isPurchasingTicket ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Ticket className="h-4 w-4 mr-2" />
+                      Buy Ticket - ${basicData?.ticketPrice?.toFixed(2) || "0.00"}
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         </div>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import Image from "next/image";
@@ -7,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { addToWatchlist } from "@/services/watchlist.services";
 import { getMyTickets } from "@/services/ticket.services";
 import { getMySubscriptions } from "@/services/subscription.services";
+import { createCheckoutSession } from "@/services/ticket.services";
 import { IContent } from "@/types/content.types";
 import { ITicket } from "@/types/ticket.types";
 import { ISubscription } from "@/types/subscription.types";
@@ -26,7 +28,8 @@ import {
   Ticket,
   Sparkles,
   Star,
-  Film
+  Film,
+  Loader2
 } from "lucide-react";
 import { ReviewSection } from "./ReviewSection";
 import { toast } from "sonner";
@@ -83,6 +86,7 @@ interface ContentDetailViewProps {
 
 export function ContentDetailView({ content }: ContentDetailViewProps) {
   const [showTrailer, setShowTrailer] = useState(false);
+  const [isPurchasingTicket, setIsPurchasingTicket] = useState(false);
   const queryClient = useQueryClient();
 
   const needsSubscription = content.accessType === "SUBSCRIPTION" || content.accessType === "BOTH";
@@ -97,7 +101,7 @@ export function ContentDetailView({ content }: ContentDetailViewProps) {
   });
 
   // Check if viewer has ticket for this content
-  const { data: tickets, isLoading: loadingTickets } = useQuery({
+  const { data: tickets, isLoading: loadingTickets, refetch: refetchTickets } = useQuery({
     queryKey: ["my-tickets"],
     queryFn: getMyTickets,
     enabled: needsTicket,
@@ -119,6 +123,60 @@ export function ContentDetailView({ content }: ContentDetailViewProps) {
     addToWatchlistMutation(content.id);
   };
 
+  const handleBuyTicket = async () => {
+    setIsPurchasingTicket(true);
+    try {
+      const sessionResponse = await createCheckoutSession(content.id);
+      
+      if (!sessionResponse.success) {
+        const message = sessionResponse.message || "Failed to create checkout session";
+        
+        // Check if already purchased
+        if (message.toLowerCase().includes("already purchased") || 
+            message.toLowerCase().includes("already have a ticket")) {
+          toast.info("You already have a ticket for this content");
+          // Refresh tickets to update UI
+          await refetchTickets();
+          return;
+        }
+        
+        throw new Error(message);
+      }
+      
+      // Check if we have the redirect URL
+      if (!sessionResponse.data?.url) {
+        throw new Error("No checkout URL received from server");
+      }
+      
+      // Redirect to Stripe checkout
+      window.location.href = sessionResponse.data.url;
+      
+    } catch (error: any) {
+      console.error("Payment error:", error);
+      
+      let errorMessage = "Failed to initiate payment. Please try again.";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      // Check for "already purchased" in error message
+      if (errorMessage.toLowerCase().includes("already purchased") || 
+          errorMessage.toLowerCase().includes("already have a ticket")) {
+        toast.info("You already have a ticket for this content");
+        await refetchTickets();
+      } else {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setIsPurchasingTicket(false);
+    }
+  };
+
   // Check if user has access
   const hasActiveSubscription = subscriptions?.data?.some(
     (sub: ISubscription) => sub.status === "PAID" && new Date(sub.endDate) >= new Date()
@@ -128,7 +186,7 @@ export function ContentDetailView({ content }: ContentDetailViewProps) {
     (ticket: ITicket) => ticket.contentId === content.id && ticket.paymentStatus === "PAID"
   );
 
-  const isLoadingAccess = needsSubscription && loadingSubscriptions || needsTicket && loadingTickets;
+  const isLoadingAccess = (needsSubscription && loadingSubscriptions) || (needsTicket && loadingTickets);
 
   // Compute average rating from reviews if available
   const averageRating = content.reviews && content.reviews.length > 0
@@ -160,11 +218,23 @@ export function ContentDetailView({ content }: ContentDetailViewProps) {
           </Link>
         </Button>
       ) : (
-        <Button asChild size="lg" className="flex items-center gap-2">
-          <Link href={`/dashboard/buy-ticket?contentId=${content.id}`}>
-            <Ticket className="h-5 w-5" />
-            Buy Ticket - ${content.ticketPrice}
-          </Link>
+        <Button 
+          size="lg" 
+          onClick={handleBuyTicket}
+          disabled={isPurchasingTicket}
+          className="flex items-center gap-2"
+        >
+          {isPurchasingTicket ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            <>
+              <Ticket className="h-5 w-5" />
+              Buy Ticket - ${content.ticketPrice}
+            </>
+          )}
         </Button>
       );
     }
@@ -202,11 +272,23 @@ export function ContentDetailView({ content }: ContentDetailViewProps) {
       // No access - show both options
       return (
         <div className="flex gap-3">
-          <Button asChild size="lg" className="flex items-center gap-2">
-            <Link href={`/dashboard/buy-ticket?contentId=${content.id}`}>
-              <Ticket className="h-5 w-5" />
-              Buy Ticket - ${content.ticketPrice}
-            </Link>
+          <Button 
+            size="lg" 
+            onClick={handleBuyTicket}
+            disabled={isPurchasingTicket}
+            className="flex items-center gap-2"
+          >
+            {isPurchasingTicket ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <Ticket className="h-5 w-5" />
+                Buy Ticket - ${content.ticketPrice}
+              </>
+            )}
           </Button>
           <Button asChild size="lg" variant="outline" className="flex items-center gap-2">
             <Link href="/payment/checkout">
@@ -412,20 +494,20 @@ export function ContentDetailView({ content }: ContentDetailViewProps) {
                 </motion.div>
               )}
 
-              {/* Action Buttons */}
+              {/* Action Buttons - FIXED */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.9 }}
                 className="flex flex-wrap gap-4 pt-4"
               >
-                {/* Primary Watch Button */}
+                {/* Primary Watch Button with fixed click handling */}
                 <div className="relative group">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-purple-600 rounded-lg blur opacity-60 group-hover:opacity-100 transition duration-500" />
+                  {/* Gradient blur effect behind the button - now with pointer-events-none */}
+                  <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-purple-600 rounded-lg blur opacity-60 group-hover:opacity-100 transition duration-500 pointer-events-none" />
                   {getWatchButton()}
                 </div>
 
-                {/* Add to Watchlist */}
                 <Button
                   variant="outline"
                   size="lg"
@@ -448,6 +530,24 @@ export function ContentDetailView({ content }: ContentDetailViewProps) {
       {/* Main Content */}
       <div className="container mx-auto px-4 pb-12">
         {/* Trailer Section */}
+        {!showTrailer && content.trailerUrl && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mb-12"
+          >
+            <Button
+              onClick={() => setShowTrailer(true)}
+              variant="outline"
+              className="gap-2"
+            >
+              <Play className="h-4 w-4" />
+              Watch Trailer
+            </Button>
+          </motion.div>
+        )}
+
         {showTrailer && content.trailerUrl && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}

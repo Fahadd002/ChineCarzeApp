@@ -64,14 +64,17 @@ export const getRouteOwner = (pathname : string) : "SUPER_ADMIN" | "ADMIN" | "CO
     return null; // public route
 }
 
-export const getDefaultDashboardRoute = (role : UserRole) => {
-    if(role === "ADMIN" || role === "SUPER_ADMIN") {
+export const getDefaultDashboardRoute = (role : UserRole | string | undefined | null) => {
+    // Normalize the role: convert to uppercase and handle potential string variations
+    const normalizedRole = role ? String(role).toUpperCase().trim() : "";
+    
+    if (normalizedRole === "ADMIN" || normalizedRole === "SUPER_ADMIN") {
         return "/admin/dashboard";
     }
-    if(role === "CONTENT_MANAGER") {
+    if (normalizedRole === "CONTENT_MANAGER") {
         return "/contentManager/dashboard";
     }
-    if(role === "VIEWER") {
+    if (normalizedRole === "VIEWER") {
         return "/dashboard";
     }
 

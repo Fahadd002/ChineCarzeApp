@@ -1,16 +1,52 @@
 "use client"
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Film, Menu, X } from "lucide-react";
+import { Film, Menu, X, LogOut, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
+import { logout } from "@/services/auth.services";
+import { getDefaultDashboardRoute, UserRole } from "@/lib/authUtils";
 
 const PublicNavbar = () => {
   const router = useRouter();
+  const { session, loading } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      const success = await logout();
+      if (success) {
+        router.push("/login");
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <>
@@ -65,28 +101,89 @@ const PublicNavbar = () => {
           ))}
         </div>
 
-        {/* Auth Buttons */}
+        {/* Auth Buttons / User Profile */}
         <div className="flex items-center gap-2">
-          {/* Login Button */}
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              variant="ghost"
-              onClick={() => router.push("/login")}
-              className="text-foreground hover:bg-white/5 border border-transparent hover:border-white/10"
-            >
-              Login
-            </Button>
-          </motion.div>
+          {!loading && !session ? (
+            <>
+              {/* Login Button */}
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant="ghost"
+                  onClick={() => router.push("/login")}
+                  className="text-foreground hover:bg-white/5 border border-transparent hover:border-white/10"
+                >
+                  Login
+                </Button>
+              </motion.div>
 
-          {/* Sign Up Button */}
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              onClick={() => router.push("/register")}
-              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 border-0 shadow-lg shadow-red-500/30"
-            >
-              Sign Up
-            </Button>
-          </motion.div>
+              {/* Sign Up Button */}
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  onClick={() => router.push("/register")}
+                  className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 border-0 shadow-lg shadow-red-500/30"
+                >
+                  Sign Up
+                </Button>
+              </motion.div>
+            </>
+          ) : session ? (
+            /* User Profile Dropdown */
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="gap-2 hover:bg-white/5 border border-transparent hover:border-white/10"
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-gradient-to-br from-red-500 to-purple-500 text-white text-xs font-bold">
+                        {getInitials(session.user.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden sm:block text-sm font-medium text-gray-300">
+                      {session.user.name}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {/* User Info */}
+                  <div className="px-2 py-1.5">
+                    <p className="text-sm font-semibold text-white">
+                      {session.user.name}
+                    </p>
+                    <p className="text-xs text-gray-400">{session.user.email}</p>
+                    <p className="text-xs text-gray-500 capitalize mt-1">
+                      {session.user.role.replace(/_/g, " ")}
+                    </p>
+                  </div>
+                  <DropdownMenuSeparator />
+
+                   {/* Dashboard Navigation */}
+                   <DropdownMenuItem asChild>
+                     <Link
+                       href={getDefaultDashboardRoute(session.user.role as UserRole)}
+                       className="flex items-center gap-2 cursor-pointer"
+                     >
+                       <LayoutDashboard className="w-4 h-4" />
+                       Dashboard
+                     </Link>
+                   </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+
+                  {/* Logout */}
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    className="flex items-center gap-2 text-red-400 focus:text-red-400 focus:bg-red-500/10 cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    {isLoggingOut ? "Logging out..." : "Logout"}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </motion.div>
+          ) : null}
 
           {/* Mobile menu toggle */}
           <Button
@@ -117,8 +214,6 @@ const PublicNavbar = () => {
               { href: "/", label: "Home" },
               { href: "/content", label: "Browse" },
               { href: "/about", label: "About" },
-              { href: "/login", label: "Login" },
-              { href: "/register", label: "Sign Up" },
             ].map((link, i) => (
               <motion.div
                 key={link.href}
@@ -129,17 +224,94 @@ const PublicNavbar = () => {
                 <Link
                   href={link.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={cn(
-                    "block px-4 py-3 rounded-lg text-lg font-medium transition-all",
-                    link.label === "Sign Up"
-                      ? "bg-gradient-to-r from-red-600 to-red-700 text-white"
-                      : "text-gray-300 hover:bg-white/5 hover:text-white"
-                  )}
+                  className="block px-4 py-3 rounded-lg text-lg font-medium text-gray-300 hover:bg-white/5 hover:text-white transition-all"
                 >
                   {link.label}
                 </Link>
               </motion.div>
             ))}
+
+            {!loading && !session && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 3 * 0.05 }}
+                >
+                  <Link
+                    href="/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-4 py-3 rounded-lg text-lg font-medium text-gray-300 hover:bg-white/5 hover:text-white transition-all"
+                  >
+                    Login
+                  </Link>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 4 * 0.05 }}
+                >
+                  <Link
+                    href="/register"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-4 py-3 rounded-lg text-lg font-medium bg-gradient-to-r from-red-600 to-red-700 text-white transition-all"
+                  >
+                    Sign Up
+                  </Link>
+                </motion.div>
+              </>
+            )}
+
+            {!loading && session && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 3 * 0.05 }}
+                >
+                  <div className="px-4 py-3 rounded-lg bg-white/5 mb-2">
+                    <p className="text-sm font-semibold text-white">
+                      {session.user.name}
+                    </p>
+                    <p className="text-xs text-gray-400">{session.user.email}</p>
+                    <p className="text-xs text-gray-500 capitalize mt-1">
+                      {session.user.role.replace(/_/g, " ")}
+                    </p>
+                  </div>
+                </motion.div>
+                 <motion.div
+                   initial={{ opacity: 0, x: -20 }}
+                   animate={{ opacity: 1, x: 0 }}
+                   transition={{ delay: 3.5 * 0.05 }}
+                 >
+                   <Link
+                     href={getDefaultDashboardRoute(session.user.role as UserRole)}
+                     onClick={() => setIsMobileMenuOpen(false)}
+                     className="flex items-center gap-2 px-4 py-3 rounded-lg text-lg font-medium text-gray-300 hover:bg-white/5 hover:text-white transition-all"
+                   >
+                     <LayoutDashboard className="w-5 h-5" />
+                     Dashboard
+                   </Link>
+                 </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 4 * 0.05 }}
+                >
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      handleLogout();
+                    }}
+                    disabled={isLoggingOut}
+                    className="w-full flex items-center gap-2 px-4 py-3 rounded-lg text-lg font-medium text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-50"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    {isLoggingOut ? "Logging out..." : "Logout"}
+                  </button>
+                </motion.div>
+              </>
+            )}
           </div>
         </motion.div>
       )}

@@ -44,6 +44,15 @@ export function usePaymentFlow() {
 
       const response = await serviceCall;
 
+      // Check if user is not authenticated
+      if (response.status === 401 || (response.success === false && response.message?.includes('not authenticated'))) {
+        setError('Please login to continue');
+        setLoading(false);
+        // Redirect to login page
+        router.push('/login');
+        return;
+      }
+
       if (response.success && response.data?.url) {
         window.location.href = response.data.url;
       } else {
@@ -53,7 +62,7 @@ export function usePaymentFlow() {
       setError(err.message || 'An error occurred while processing your payment.');
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   const handleTicketPurchase = useCallback(async (contentId: string) => {
     await initiatePayment('TICKET', contentId);

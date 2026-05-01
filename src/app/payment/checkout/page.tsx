@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -24,7 +25,7 @@ const CheckoutPage = () => {
       const response = await createSession({ plan });
 
       if (response.success && response.data?.url) {
-        window.location.href = response.data.url;
+        
       } else {
         toast.error(response.message || "Failed to start checkout");
       }
