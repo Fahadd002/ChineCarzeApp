@@ -45,7 +45,7 @@ export const createManagerAction = async (
   } catch (error: unknown) {
     return {
       success: false,
-      message: getActionErrorMessage(error, "Failed to create doctor"),
+      message: getActionErrorMessage(error, "Failed to create Manager"),
     }
   }
 }
@@ -68,7 +68,7 @@ export const updateManagerAction = async (
   } catch (error: unknown) {
     return {
       success: false,
-      message: getActionErrorMessage(error, "Failed to update doctor"),
+      message: getActionErrorMessage(error, "Failed to update Manager"),
     }
   }
 }

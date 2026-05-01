@@ -50,8 +50,8 @@ const DeleteManagerConfirmationDialog = ({
     toast.success(result.message || "Manager deleted successfully")
     onOpenChange(false)
 
-    void queryClient.invalidateQueries({ queryKey: ["doctors"] })
-    void queryClient.refetchQueries({ queryKey: ["doctors"], type: "active" })
+    void queryClient.invalidateQueries({ queryKey: ["Managers"] })
+    void queryClient.refetchQueries({ queryKey: ["Managers"], type: "active" })
     router.refresh()
   }
 

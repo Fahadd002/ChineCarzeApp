@@ -28,7 +28,6 @@ export async function deleteContentManager(id: string): Promise<ApiResponse<{ me
     return httpClient.delete<{ message: string }>(`/content-managers/${id}`);
 }
 
-// Backward-compatible aliases (existing UI still uses "doctors" naming in a few places)
 export const getManager = getContentManager;
 export const getManagerById = getContentManagerById;
 export const updateManager = updateContentManager;

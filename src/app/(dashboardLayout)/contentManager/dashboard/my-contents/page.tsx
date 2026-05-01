@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -96,7 +97,7 @@ const MyContentsPage = () => {
             />
           ) : (
             <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">You haven't added any content yet.</p>
+              <p className="text-muted-foreground mb-4">You haven not added any content yet.</p>
               <Button asChild>
                 <Link href="/contentManager/dashboard/add-content">
                   <Plus className="h-4 w-4 mr-2" />

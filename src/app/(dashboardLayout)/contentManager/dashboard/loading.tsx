@@ -1,4 +1,4 @@
-export default function DoctorDashboardLoading() {
+export default function ManagerDashboardLoading() {
   // Or a custom loading skeleton component
-  return <p>Loading Doctor Dashboard...</p>;
+  return <p>Loading Manager Dashboard...</p>;
 }

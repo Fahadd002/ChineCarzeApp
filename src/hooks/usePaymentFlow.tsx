@@ -45,7 +45,7 @@ export function usePaymentFlow() {
       const response = await serviceCall;
 
       // Check if user is not authenticated
-      if (response.status === 401 || (response.success === false && response.message?.includes('not authenticated'))) {
+      if (response.success === false && response.message?.includes('not authenticated')) {
         setError('Please login to continue');
         setLoading(false);
         // Redirect to login page

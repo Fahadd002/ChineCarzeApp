@@ -48,9 +48,9 @@ export async function POST(request: NextRequest) {
             await setTokenInCookies("accessToken", accessToken);
             response.cookies.set("accessToken", accessToken, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
+                secure: process.env.DEPLOYMENT_ENV === "production",
                 path: "/",
-                sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+                sameSite: process.env.DEPLOYMENT_ENV === "production" ? "strict" : "lax",
             });
         }
 
@@ -58,9 +58,9 @@ export async function POST(request: NextRequest) {
             await setTokenInCookies("refreshToken", newRefreshToken);
             response.cookies.set("refreshToken", newRefreshToken, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
+                secure: process.env.DEPLOYMENT_ENV === "production",
                 path: "/",
-                sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+                sameSite: process.env.DEPLOYMENT_ENV === "production" ? "strict" : "lax",
             });
         }
 
@@ -68,9 +68,9 @@ export async function POST(request: NextRequest) {
             await setTokenInCookies("better-auth.session_token", sessionToken, 24 * 60 * 60);
             response.cookies.set("better-auth.session_token", sessionToken, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
+                secure: process.env.DEPLOYMENT_ENV === "production",
                 path: "/",
-                sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+                sameSite: process.env.DEPLOYMENT_ENV === "production" ? "strict" : "lax",
                 maxAge: 24 * 60 * 60,
             });
         }

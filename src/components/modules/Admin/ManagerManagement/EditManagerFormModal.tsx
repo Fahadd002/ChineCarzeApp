@@ -28,7 +28,7 @@ const getInitialValues = (manager: IContentManager | null): IEditContentManagerF
   gender: manager?.gender ?? Gender.MALE,
 })
 
-const EditDoctorFormModal = ({ open, onOpenChange, manager }: EditManagerFormModalProps) => {
+const EditManagerFormModal = ({ open, onOpenChange, manager }: EditManagerFormModalProps) => {
   const queryClient = useQueryClient()
   const router = useRouter()
 
@@ -63,8 +63,8 @@ const EditDoctorFormModal = ({ open, onOpenChange, manager }: EditManagerFormMod
       toast.success(result.message || "Manager updated successfully")
       onOpenChange(false)
 
-      void queryClient.invalidateQueries({ queryKey: ["doctors"] })
-      void queryClient.refetchQueries({ queryKey: ["doctors"], type: "active" })
+      void queryClient.invalidateQueries({ queryKey: ["Managers"] })
+      void queryClient.refetchQueries({ queryKey: ["Managers"], type: "active" })
       router.refresh()
     },
   })
@@ -120,4 +120,4 @@ const EditDoctorFormModal = ({ open, onOpenChange, manager }: EditManagerFormMod
   )
 }
 
-export default EditDoctorFormModal
+export default EditManagerFormModal

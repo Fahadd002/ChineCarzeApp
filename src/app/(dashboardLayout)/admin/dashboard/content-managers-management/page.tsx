@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import ManagerTable from "@/components/modules/Admin/ManagerManagement/ManagerTable";
 import { getContentManager } from "@/services/contentManager.services";
 import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
@@ -42,4 +44,4 @@ const ContentManagementPage = async ({
   );
 };
 
-export default ContentManagementPage
+export default ContentManagementPage;

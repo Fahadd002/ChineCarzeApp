@@ -81,12 +81,15 @@ export function AnimatedCard({
 }
 
 // AnimatedButton with multiple variants
-interface AnimatedButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface AnimatedButtonProps {
   children: React.ReactNode;
   variant?: 'default' | 'ghost' | 'outline' | 'gradient' | 'glow';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   glowColor?: 'red' | 'blue' | 'purple';
+  className?: string;
+  disabled?: boolean;
+  [key: string]: unknown;
 }
 
 export function AnimatedButton({
@@ -97,7 +100,7 @@ export function AnimatedButton({
   glowColor = 'red',
   className,
   disabled,
-  ...props
+  ...buttonProps
 }: AnimatedButtonProps) {
   const baseStyles =
     'relative inline-flex items-center justify-center font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
@@ -140,7 +143,7 @@ export function AnimatedButton({
         className
       )}
       disabled={disabled || isLoading}
-      {...props}
+      {...buttonProps}
     >
       {isLoading ? (
         <motion.div

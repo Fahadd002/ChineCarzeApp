@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
 import { ApiResponse } from "@/types/api.type";
@@ -30,6 +31,6 @@ export async function getDashboardData(): Promise<ApiResponse<IAdminDashboardDat
             success: false,
             message: error.message || "An error occurred while fetching dashboard data.",
             data: null,
-        };
+        } as any;
     }
 }

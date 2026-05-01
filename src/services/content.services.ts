@@ -86,3 +86,7 @@ export async function deleteContent(id: string): Promise<ApiResponse<null>> {
 export async function getMyContents(): Promise<ApiResponse<IContent[]>> {
     return httpClient.get("/contents/my-contents");
 }
+
+export async function checkContentAccess(id: string): Promise<ApiResponse<{ canAccess: boolean }>> {
+    return httpClient.get(`/contents/${id}/access`);
+}

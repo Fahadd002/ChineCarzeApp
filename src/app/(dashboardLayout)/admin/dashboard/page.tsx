@@ -1,3 +1,6 @@
+// Add this at the VERY TOP - before any imports
+export const dynamic = 'force-dynamic';
+
 import AdminDashboardContent from "@/components/modules/Dashboard/AdminDashboardContent";
 import { getDashboardData } from "@/services/dashboard.services";
 import { ApiResponse } from "@/types/api.type";
@@ -10,10 +13,9 @@ const AdminDashboardPage = async () => {
   await queryClient.prefetchQuery({
     queryKey: ["admin-dashboard-data"],
     queryFn: getDashboardData,
-    staleTime: 30 * 1000, // 30 seconds - data stays fresh if this data is accessed again within 30 seconds, it will use the cached data instead of making a new request
-    gcTime: 5 * 60 * 1000, // 5 minutes - garbage collection time, after this time the cached data will be removed from memory if it's not used
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
-
 
   const dashboardData = queryClient.getQueryData(["admin-dashboard-data"]) as ApiResponse<IAdminDashboardData>;
 
@@ -26,4 +28,4 @@ const AdminDashboardPage = async () => {
   )
 }
 
-export default AdminDashboardPage
+export default AdminDashboardPage;

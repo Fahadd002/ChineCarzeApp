@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -77,8 +78,8 @@ const AppField = ({
         {/* Prepend icon/element */}
         {prepend && (
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10">
-            {React.cloneElement(prepend as React.ReactElement, {
-              className: cn((prepend as React.ReactElement).props.className, "text-muted-foreground group-hover:text-red-500 transition-colors")
+            {React.cloneElement(prepend as React.ReactElement<any>, {
+              className: cn((prepend as React.ReactElement<any>).props.className, "text-muted-foreground group-hover:text-red-500 transition-colors")
             })}
           </div>
         )}

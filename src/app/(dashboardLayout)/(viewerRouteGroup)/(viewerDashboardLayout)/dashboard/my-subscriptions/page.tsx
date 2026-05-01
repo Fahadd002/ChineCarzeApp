@@ -2,17 +2,24 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { getMySubscriptions } from "@/services/subscription.services";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 
 const MySubscriptionsPage = () => {
+  const router = useRouter();
   const { data: subscriptions, isLoading, error } = useQuery({
     queryKey: ["my-subscriptions"],
     queryFn: getMySubscriptions,
   });
+
+  const handleGetSubscription = () => {
+    router.push("/payment/checkout");
+  };
 
   if (isLoading) {
     return (
@@ -51,8 +58,11 @@ const MySubscriptionsPage = () => {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
+        <CardHeader className="flex justify-between items-center flex-row">
           <CardTitle>My Subscriptions</CardTitle>
+          <Button onClick={handleGetSubscription} className="bg-primary hover:bg-primary/90">
+            Get Subscription
+          </Button>
         </CardHeader>
         <CardContent>
           {subscriptions && subscriptions.data && subscriptions.data.length > 0 ? (
@@ -95,7 +105,9 @@ const MySubscriptionsPage = () => {
               ))}
             </div>
           ) : (
-            <p className="text-muted-foreground">You have no active subscriptions.</p>
+            <div className="flex justify-between items-center py-6">
+              <p className="text-muted-foreground">You have no active subscriptions.</p>
+            </div>
           )}
         </CardContent>
       </Card>
